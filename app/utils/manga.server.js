@@ -54,7 +54,28 @@ export async function hideChapter(token, manga, chapterPath) {
       newChapters[chapterIndex] = chapter
     }
   })
-  console.log(newChapters)
+
+  const response = await fetch(`${rootPath}/${manga}/Description.json:/content`, {
+    method: 'PUT',
+    headers: new Headers([
+      ['Authorization', `Bearer ${token}`],
+      ['Content-Type', 'application/json']
+    ]),
+    body: JSON.stringify({ ...details, chapters: newChapters })
+  })
+  console.log(await response.json())
+}
+
+export async function markChapter(token, manga, chapterPath, asRead) {
+  const details = await getMangaDetail(token, manga)
+  let newChapters = []
+  details.chapters.forEach((chapter, chapterIndex) => {
+    if (chapter.path === chapterPath) {
+      newChapters[chapterIndex] = { ...chapter, read: asRead }
+    } else {
+      newChapters[chapterIndex] = chapter
+    }
+  })
 
   const response = await fetch(`${rootPath}/${manga}/Description.json:/content`, {
     method: 'PUT',

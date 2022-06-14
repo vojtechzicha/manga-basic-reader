@@ -73,7 +73,15 @@ export default function MangaSeries() {
             .map(chapter => (
               <tr key={chapter.path}>
                 <td>
-                  <Link to={`chapter/${chapter.path}`}>{chapter.meta.name}</Link>
+                  {chapter.read ? (
+                    <em>
+                      <Link to={`chapter/${chapter.path}`}>{chapter.meta.name}</Link>
+                    </em>
+                  ) : (
+                    <>
+                      <Link to={`chapter/${chapter.path}`}>{chapter.meta.name}</Link>
+                    </>
+                  )}
                 </td>
                 {showEditTools && (
                   <td>

@@ -1,8 +1,8 @@
 import { redirect } from '@remix-run/node'
-import { Link, useLoaderData } from '@remix-run/react'
+import { Link, useLoaderData, Form } from '@remix-run/react'
 import { authorize } from '../../onedrive.server'
 
-import { getImages, getMangaDetail } from '../../utils/manga.server'
+import { getImages, getMangaDetail, markChapter } from '../../utils/manga.server'
 
 export async function action({ request, params: { series, chapterPath } }) {
   return await authorize(request, async ({ token }) => {
@@ -11,23 +11,33 @@ export async function action({ request, params: { series, chapterPath } }) {
 
     const action = (await request.formData()).get('action')
     const myChapter = chapters.find(ch => ch.path === chapterPath)
-    const tresholdTest = action === 'prev-chapter' ? -1 : Number.MAX_SAFE_INTEGER
-    const thresholdIndex = chapters.reduce(
-      (pr, cu) =>
-        (
-          action === 'prev-chapter'
-            ? cu.realindex > pr && cu.realindex < myChapter.realindex
-            : cu.realindex < pr && cu.realindex > myChapter.realindex
-        )
-          ? cu.realindex
-          : pr,
-      tresholdTest
-    )
 
-    if (thresholdIndex === tresholdTest) {
-      return redirect(`/manga/${series}`)
+    if (action === 'prev-chapter') {
+      const thresholdIndex = chapters.reduce(
+        (pr, cu) => (cu.realindex > pr && cu.realindex < myChapter.realindex ? cu.realindex : pr),
+        -1
+      )
+
+      markChapter(token, series, chapterPath, false)
+
+      if (thresholdIndex === -1) {
+        return redirect(`/manga/${series}`)
+      } else {
+        return redirect(`/manga/${series}/chapter/${chapters.filter(ch => ch.realindex === thresholdIndex)[0].path}`)
+      }
     } else {
-      return redirect(`/manga/${series}/chapter/${chapters.filter(ch => ch.realindex === thresholdIndex)[0].path}`)
+      const thresholdIndex = chapters.reduce(
+        (pr, cu) => (cu.realindex < pr && cu.realindex > myChapter.realindex ? cu.realindex : pr),
+        Number.MAX_SAFE_INTEGER
+      )
+
+      markChapter(token, series, chapterPath, true)
+
+      if (thresholdIndex === Number.MAX_SAFE_INTEGER) {
+        return redirect(`/manga/${series}`)
+      } else {
+        return redirect(`/manga/${series}/chapter/${chapters.filter(ch => ch.realindex === thresholdIndex)[0].path}`)
+      }
     }
   })
 }
@@ -52,18 +62,21 @@ export default function Index() {
       <h2>{chapter.meta.name}</h2>
       <hr />
       {images.map((imgSrc, index) => (
-        <img key={index} src={imgSrc} alt='Manga chapter' />
+        <>
+          <img key={index} src={imgSrc} alt='Manga chapter' />
+          <br />
+        </>
       ))}
       <hr />
-      <form method='POST'>
+      <Form method='POST'>
         <input type='hidden' name='action' value='prev-chapter' />
         <input type='submit' value='< Previous Chapter' />
-      </form>
+      </Form>
       <Link to={`/manga/${details.request.slug}`}>Back to {details.meta.name}</Link>
-      <form method='POST'>
+      <Form method='POST'>
         <input type='hidden' name='action' value='next-chapter' />
         <input type='submit' value='> Next Chapter' />
-      </form>
+      </Form>
     </div>
   )
 }
