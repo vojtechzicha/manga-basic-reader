@@ -66,12 +66,12 @@ export async function hideChapter(token, manga, chapterPath) {
   console.log(await response.json())
 }
 
-export async function markChapter(token, manga, chapterPath, asRead) {
+export async function markChapter(token, manga, chapterPath, asRead, readDate = null) {
   const details = await getMangaDetail(token, manga)
   let newChapters = []
   details.chapters.forEach((chapter, chapterIndex) => {
     if (chapter.path === chapterPath) {
-      newChapters[chapterIndex] = { ...chapter, read: asRead }
+      newChapters[chapterIndex] = { ...chapter, read: asRead === true ? (readDate ?? new Date()).toISOString() : false }
     } else {
       newChapters[chapterIndex] = chapter
     }
@@ -88,7 +88,7 @@ export async function markChapter(token, manga, chapterPath, asRead) {
   console.log(await response.json())
 }
 
-export async function showAllChapter(token, manga) {
+export async function showAllChapters(token, manga) {
   const details = await getMangaDetail(token, manga)
 
   const response = await fetch(`${rootPath}/${manga}/Description.json:/content`, {
@@ -100,6 +100,26 @@ export async function showAllChapter(token, manga) {
     body: JSON.stringify({
       ...details,
       chapters: details.chapters.map(ch => ({ ...ch, hidden: false, newIndex: null, realIndex: undefined }))
+    })
+  })
+  console.log(await response.json())
+}
+
+export async function markAllChapters(token, manga, asRead, readDate = null) {
+  const details = await getMangaDetail(token, manga)
+
+  const response = await fetch(`${rootPath}/${manga}/Description.json:/content`, {
+    method: 'PUT',
+    headers: new Headers([
+      ['Authorization', `Bearer ${token}`],
+      ['Content-Type', 'application/json']
+    ]),
+    body: JSON.stringify({
+      ...details,
+      chapters: details.chapters.map(ch => ({
+        ...ch,
+        read: asRead === true ? (readDate ?? new Date()).toISOString() : false
+      }))
     })
   })
   console.log(await response.json())

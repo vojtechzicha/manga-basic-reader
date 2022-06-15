@@ -3,7 +3,14 @@ import { Link, useLoaderData, Form } from '@remix-run/react'
 import { authorize } from '../../onedrive.server'
 import { useState } from 'react'
 
-import { getMangaDetail, hideChapter, showAllChapter, moveChapter } from '../../utils/manga.server'
+import {
+  getMangaDetail,
+  hideChapter,
+  showAllChapters,
+  moveChapter,
+  markChapter,
+  markAllChapters
+} from '../../utils/manga.server'
 
 export async function action({ request, params: { series } }) {
   return authorize(request, async ({ token }) => {
@@ -13,14 +20,17 @@ export async function action({ request, params: { series } }) {
 
     if (action === 'hide') {
       await hideChapter(token, series, chapterPath)
-      return redirect(`/manga/${series}`)
     } else if (action === 'show-all') {
-      await showAllChapter(token, series)
-      return redirect(`/manga/${series}`)
-    } else {
+      await showAllChapters(token, series)
+    } else if (action.startsWith('move')) {
       await moveChapter(token, series, chapterPath, action === 'move-up')
-      return redirect(`/manga/${series}`)
+    } else if (action === 'mark') {
+      await markChapter(token, series, chapterPath, formData.get('mark-as') === 'read', new Date())
+    } else if (action === 'mark-all') {
+      await markAllChapters(token, series, formData.get('mark-as') === 'read', new Date())
     }
+
+    return redirect(`/manga/${series}`)
   })
 }
 
@@ -73,7 +83,7 @@ export default function MangaSeries() {
             .map(chapter => (
               <tr key={chapter.path}>
                 <td>
-                  {chapter.read ? (
+                  {chapter.read !== false ? (
                     <em>
                       <Link to={`chapter/${chapter.path}`}>{chapter.meta.name}</Link>
                     </em>
@@ -116,6 +126,18 @@ export default function MangaSeries() {
                   ) : (
                     <td>&nbsp;</td>
                   ))}
+                {showEditTools ? (
+                  <td>
+                    <Form method='POST' style={{ display: 'inline' }}>
+                      <input type='hidden' name='chapter.path' value={chapter.path} />
+                      <input type='hidden' name='action' value='mark' />
+                      <input type='hidden' name='mark-as' value={chapter.read ? 'unread' : 'read'} />
+                      <input type='submit' value={chapter.read ? '⭐' : '✔️'} />
+                    </Form>
+                  </td>
+                ) : (
+                  <td>&nbsp;</td>
+                )}
               </tr>
             ))}
         </tbody>
@@ -126,6 +148,28 @@ export default function MangaSeries() {
                 <Form method='POST' style={{ display: 'inline' }}>
                   <input type='hidden' name='action' value='show-all' />
                   <input type='submit' value={'Show all hidden chapters'} />
+                </Form>
+              </td>
+            </tr>
+          ) : null}
+          {showEditTools && chapters.filter(ch => ch.read !== false).length > 0 ? (
+            <tr>
+              <td rowSpan={4}>
+                <Form method='POST' style={{ display: 'inline' }}>
+                  <input type='hidden' name='action' value='mark-all' />
+                  <input type='hidden' name='mark-as' value='unread' />
+                  <input type='submit' value={'Mark all as unread'} />
+                </Form>
+              </td>
+            </tr>
+          ) : null}
+          {showEditTools && chapters.filter(ch => ch.read !== false).length === 0 ? (
+            <tr>
+              <td rowSpan={4}>
+                <Form method='POST' style={{ display: 'inline' }}>
+                  <input type='hidden' name='action' value='mark-all' />
+                  <input type='hidden' name='mark-as' value='read' />
+                  <input type='submit' value={'Mark all as read'} />
                 </Form>
               </td>
             </tr>

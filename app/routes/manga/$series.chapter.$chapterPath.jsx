@@ -18,7 +18,7 @@ export async function action({ request, params: { series, chapterPath } }) {
         -1
       )
 
-      markChapter(token, series, chapterPath, false)
+      markChapter(token, series, chapterPath, false, new Date())
 
       if (thresholdIndex === -1) {
         return redirect(`/manga/${series}`)
@@ -31,7 +31,7 @@ export async function action({ request, params: { series, chapterPath } }) {
         Number.MAX_SAFE_INTEGER
       )
 
-      markChapter(token, series, chapterPath, true)
+      markChapter(token, series, chapterPath, true, new Date())
 
       if (thresholdIndex === Number.MAX_SAFE_INTEGER) {
         return redirect(`/manga/${series}`)
