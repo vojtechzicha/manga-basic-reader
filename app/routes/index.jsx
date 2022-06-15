@@ -70,7 +70,7 @@ function MangaViewTable({ mangas, heading, showAllText = 'show all' }) {
                 ))
             ) : (
               <tr>
-                <td rowspan={7}>
+                <td rowSpan={7}>
                   <button
                     onClick={() => {
                       setShowAll(true)

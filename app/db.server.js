@@ -5,25 +5,27 @@ if (!MONGO_URL) throw new Error('Missing Mongo URL in environment variables.')
 if (!MONGO_DB) throw new Error('Missing Mongo database in environment variables.')
 
 let db = null
-if (__db === undefined) {
+if (global.__db === undefined) {
   global.__db = null
 }
 
 if (process.env.NODE_ENV === 'production') {
+  console.log('MONGODB Connecting')
   db = new MongoClient(MONGO_URL, {
     useNewUrlParser: true,
     useUnifiedTopology: true
   })
   db.connect()
 } else {
-  if (!__db) {
-    __db = new MongoClient(MONGO_URL, {
+  if (!global.__db) {
+    console.log('MONGODB Connecting')
+    global.__db = new MongoClient(MONGO_URL, {
       useNewUrlParser: true,
       useUnifiedTopology: true
     })
-    __db.connect()
+    global.__db.connect()
   }
-  db = __db
+  db = global.__db
 }
 
 export const chaptersCollection = db.db(MONGO_DB).collection('chapters')
