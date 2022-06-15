@@ -22,7 +22,7 @@ export async function loader({ request }) {
 
 function MangaViewCell({ manga }) {
   return (
-    <td>
+    <td style={{ width: '200px' }}>
       <Link to={`manga/${manga.request.slug}/read`}>
         {manga.thumbnail !== undefined ? (
           <img

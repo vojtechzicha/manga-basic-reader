@@ -51,7 +51,7 @@ export async function getMangaSeriesByGenre() {
     await mangasCollection
       .find(
         { 'request.slug': { $nin: readMangalist } },
-        { projection: { 'request.slug': 1, 'meta.name': 1, 'meta.genres': 1, thumbnail: 1 } }
+        { projection: { 'request.slug': 1, 'meta.name': 1, 'meta.genres': 1 } }
       )
       .toArray()
   )
