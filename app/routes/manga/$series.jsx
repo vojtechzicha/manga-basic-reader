@@ -14,25 +14,25 @@ import {
 } from '../../utils/manga.server'
 
 export async function action({ request, params: { series } }) {
-  return authorize(request, async ({ token }) => {
+  return authorize(request, async () => {
     const formData = await request.formData(),
-      chapterPath = formData.get('chapter.path'),
+      chapterId = formData.get('_id'),
       action = formData.get('action')
 
     if (action === 'start-reading') {
-      return redirect(`/manga/${series}/chapter/${await getNextUnreadChapter(token, series)}`)
+      return redirect(`/manga/${series}/chapter/${await getNextUnreadChapter(series)}`)
     }
 
     if (action === 'hide') {
-      await hideChapter(token, series, chapterPath)
+      await hideChapter(chapterId)
     } else if (action === 'show-all') {
-      await showAllChapters(token, series)
+      await showAllChapters(series)
     } else if (action.startsWith('move')) {
-      await moveChapter(token, series, chapterPath, action === 'move-up')
+      await moveChapter(series, chapterId, action === 'move-up')
     } else if (action === 'mark') {
-      await markChapter(token, series, chapterPath, formData.get('mark-as') === 'read', new Date())
+      await markChapter(chapterId, formData.get('mark-as') === 'read')
     } else if (action === 'mark-all') {
-      await markAllChapters(token, series, formData.get('mark-as') === 'read', new Date())
+      await markAllChapters(series, formData.get('mark-as') === 'read')
     }
 
     return redirect(`/manga/${series}`)
@@ -40,52 +40,52 @@ export async function action({ request, params: { series } }) {
 }
 
 export async function loader({ request, params: { series } }) {
-  return authorize(request, async ({ token }) => {
-    const data = await getMangaDetail(token, series)
-    return data
+  return authorize(request, async () => {
+    return await getMangaDetail(series)
   })
 }
 
 export default function MangaSeries() {
-  const data = useLoaderData()
+  const { details, chapters: rawChapters } = useLoaderData()
   const [showEditTools, toggleEditTools] = useState(false)
+  console.log(rawChapters)
 
-  let chapters = data.chapters.map(ch => ({ ...ch, realIndex: ch.newIndex === null ? ch.index : ch.newIndex }))
+  let chapters = rawChapters.map(ch => ({ ...ch, realIndex: ch.newIndex === null ? ch.index : ch.newIndex }))
   chapters.sort((chA, chB) => chA.realIndex - chB.realIndex)
 
   return (
     <div style={{ fontFamily: 'system-ui, sans-serif', lineHeight: '1.4' }}>
-      <h1>{data.meta.name}</h1>
+      <h1>{details.meta.name}</h1>
       <table>
         <tbody>
           <tr>
             <td>
-              <img src={`/manga/image/${data.request.slug}`} alt='Manga thumbnail' />
+              <img src={`/manga/image/${details.request.slug}`} alt='Manga thumbnail' />
             </td>
             <td>
               <ul>
                 <li>
                   <strong>Status: </strong>
-                  {data.meta.status}
+                  {details.meta.status}
                 </li>
                 <li>
                   <strong>Author: </strong>
-                  {data.meta.author}
+                  {details.meta.author}
                 </li>
                 <li>
                   <strong>Genres: </strong>
-                  {data.meta.genres.join(', ')}
+                  {details.meta.genres.join(', ')}
                 </li>
                 <li>
                   <strong>Alternative title: </strong>
-                  {data.meta.alternativeTitle}
+                  {details.meta.alternativeTitle}
                 </li>
               </ul>
             </td>
           </tr>
         </tbody>
       </table>
-      <p>{data.meta.summary}</p>
+      <p>{details.meta.summary}</p>
       <p>
         <Link to='/'>Back to Manga Listing</Link>
       </p>
@@ -108,22 +108,22 @@ export default function MangaSeries() {
             .filter(ch => !ch.hidden)
             .map((ch, chi) => ({ ...ch, displayIndex: chi }))
             .map(chapter => (
-              <tr key={chapter.path}>
+              <tr key={chapter._id.toString()}>
                 <td>
                   {chapter.read !== false ? (
                     <em>
-                      <Link to={`chapter/${chapter.path}`}>{chapter.meta.name}</Link>
+                      <Link to={`chapter/${chapter.chapterPath}`}>{chapter.name}</Link>
                     </em>
                   ) : (
                     <>
-                      <Link to={`chapter/${chapter.path}`}>{chapter.meta.name}</Link>
+                      <Link to={`chapter/${chapter.chapterPath}`}>{chapter.name}</Link>
                     </>
                   )}
                 </td>
                 {showEditTools && (
                   <td>
                     <Form method='POST' style={{ display: 'inline' }}>
-                      <input type='hidden' name='chapter.path' value={chapter.path} />
+                      <input type='hidden' name='_id' value={chapter._id.toString()} />
                       <input type='hidden' name='action' value='hide' />
                       <input type='submit' value={'❌'} />
                     </Form>
@@ -133,7 +133,7 @@ export default function MangaSeries() {
                   (chapter.displayIndex > 0 ? (
                     <td>
                       <Form method='POST' style={{ display: 'inline' }}>
-                        <input type='hidden' name='chapter.path' value={chapter.path} />
+                        <input type='hidden' name='_id' value={chapter._id.toString()} />
                         <input type='hidden' name='action' value='move-up' />
                         <input type='submit' value={'⬆️'} />
                       </Form>
@@ -145,7 +145,7 @@ export default function MangaSeries() {
                   (chapter.displayIndex < chapters.filter(ch => !ch.hidden).length - 1 ? (
                     <td>
                       <Form method='POST' style={{ display: 'inline' }}>
-                        <input type='hidden' name='chapter.path' value={chapter.path} />
+                        <input type='hidden' name='_id' value={chapter._id.toString()} />
                         <input type='hidden' name='action' value='mode-down' />
                         <input type='submit' value={'⬇️'} />
                       </Form>
@@ -156,7 +156,7 @@ export default function MangaSeries() {
                 {showEditTools ? (
                   <td>
                     <Form method='POST' style={{ display: 'inline' }}>
-                      <input type='hidden' name='chapter.path' value={chapter.path} />
+                      <input type='hidden' name='_id' value={chapter._id.toString()} />
                       <input type='hidden' name='action' value='mark' />
                       <input type='hidden' name='mark-as' value={chapter.read ? 'unread' : 'read'} />
                       <input type='submit' value={chapter.read ? '⭐' : '✔️'} />

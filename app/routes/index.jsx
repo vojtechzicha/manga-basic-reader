@@ -2,13 +2,13 @@ import { Link, useLoaderData } from '@remix-run/react'
 import { Fragment } from 'react'
 import { authorize } from '../onedrive.server'
 
-import { getMangaSeries, getMangaSeriesByGenre } from '../utils/manga.server'
+import { getAllMangaSeries, getMangaSeriesByGenre } from '../utils/manga.server'
 
 export async function loader({ request }) {
-  return authorize(request, async ({ token }) => {
+  return authorize(request, async () => {
     return {
-      all: await getMangaSeries(token),
-      byGenre: await getMangaSeriesByGenre(token)
+      all: await getAllMangaSeries(),
+      byGenre: await getMangaSeriesByGenre()
     }
   })
 }
@@ -33,13 +33,11 @@ export default function Index() {
 
       <h2>All Series List</h2>
       <ul>
-        {Object.keys(data.all)
-          .sort()
-          .map(seriesId => (
-            <li key={seriesId}>
-              <Link to={`manga/${seriesId}`}>{data.all[seriesId].meta.name}</Link>
-            </li>
-          ))}
+        {data.all.map(manga => (
+          <li key={manga._id.toString()}>
+            <Link to={`manga/${manga.request.slug}`}>{manga.meta.name}</Link>
+          </li>
+        ))}
       </ul>
       <h2>List by Genre</h2>
       {Object.keys(data.byGenre)

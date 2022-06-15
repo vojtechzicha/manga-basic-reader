@@ -1,3 +1,5 @@
+import { chaptersCollection, mangasCollection } from '../db.server'
+import { ObjectId } from 'mongodb'
 const rootPath = 'https://graph.microsoft.com/v1.0/me/drive/root:/DMS/MangaGoArchive'
 
 async function fetchOnedrive(path, token) {
@@ -12,19 +14,31 @@ async function fetchOnedrive(path, token) {
   return response
 }
 
-export function getMangaSeries(token) {
-  return fetchOnedrive('Description.json:/content', token)
+export async function getAllMangaSeries() {
+  const data = await mangasCollection
+    .find(
+      {},
+      {
+        sort: { 'meta.name': 1 },
+        projection: { 'meta.name': 1, 'request.slug': 1 }
+      }
+    )
+    .toArray()
+  return data
 }
-export async function getMangaSeriesByGenre(token) {
-  const mangas = await getMangaSeries(token)
-  return Object.keys(mangas)
-    .map(slug => ({ id: slug, ...mangas[slug] }))
-    .reduce((pr, data) => [...pr, ...data.meta.genres.map(genre => [genre, data])], [])
+export async function getMangaSeriesByGenre() {
+  return (
+    await mangasCollection.find({}, { projection: { 'request.slug': 1, 'meta.name': 1, 'meta.genres': 1 } }).toArray()
+  )
+    .reduce((pr, manga) => [...pr, ...manga.meta.genres.map(genre => [genre, manga])], [])
     .reduce((pr, cu) => ({ ...pr, [cu[0]]: [...(pr[cu[0]] === undefined ? [] : pr[cu[0]]), cu[1]] }), {})
 }
 
-export function getMangaDetail(token, seriesId) {
-  return fetchOnedrive(`${seriesId}/Description.json:/content`, token)
+export async function getMangaDetail(mangaPath) {
+  const details = await mangasCollection.findOne({ 'request.slug': mangaPath })
+  const chapters = await chaptersCollection.find({ mangaPath }).toArray()
+
+  return { details, chapters }
 }
 
 export async function getImages(token, seriesId, chapterId) {
@@ -51,129 +65,59 @@ export function getThumbnailImage(token, manga) {
   }).then(response => response.body)
 }
 
-export async function hideChapter(token, manga, chapterPath) {
-  const details = await getMangaDetail(token, manga)
-  let newChapters = []
-  details.chapters.forEach((chapter, chapterIndex) => {
-    if (chapter.path === chapterPath) {
-      newChapters[chapterIndex] = { ...chapter, hidden: true }
-    } else {
-      newChapters[chapterIndex] = chapter
-    }
-  })
-
-  const response = await fetch(`${rootPath}/${manga}/Description.json:/content`, {
-    method: 'PUT',
-    headers: new Headers([
-      ['Authorization', `Bearer ${token}`],
-      ['Content-Type', 'application/json']
-    ]),
-    body: JSON.stringify({ ...details, chapters: newChapters })
-  })
-  console.log(await response.json())
+export async function hideChapter(chapterId) {
+  await chaptersCollection.updateOne({ _id: ObjectId(chapterId) }, { $set: { hidden: true } })
 }
 
-export async function markChapter(token, manga, chapterPath, asRead, readDate = null) {
-  const details = await getMangaDetail(token, manga)
-  let newChapters = []
-  details.chapters.forEach((chapter, chapterIndex) => {
-    if (chapter.path === chapterPath) {
-      newChapters[chapterIndex] = { ...chapter, read: asRead === true ? (readDate ?? new Date()).toISOString() : false }
-    } else {
-      newChapters[chapterIndex] = chapter
-    }
-  })
-
-  const response = await fetch(`${rootPath}/${manga}/Description.json:/content`, {
-    method: 'PUT',
-    headers: new Headers([
-      ['Authorization', `Bearer ${token}`],
-      ['Content-Type', 'application/json']
-    ]),
-    body: JSON.stringify({ ...details, chapters: newChapters })
-  })
-  console.log(await response.json())
+export async function markChapter(chapterId, asRead, readDate = null) {
+  await chaptersCollection.updateOne(
+    { _id: ObjectId(chapterId) },
+    { $set: { read: asRead, readAt: asRead ? readDate ?? new Date() : null } }
+  )
 }
 
-export async function showAllChapters(token, manga) {
-  const details = await getMangaDetail(token, manga)
-
-  const response = await fetch(`${rootPath}/${manga}/Description.json:/content`, {
-    method: 'PUT',
-    headers: new Headers([
-      ['Authorization', `Bearer ${token}`],
-      ['Content-Type', 'application/json']
-    ]),
-    body: JSON.stringify({
-      ...details,
-      chapters: details.chapters.map(ch => ({ ...ch, hidden: false, newIndex: null, realIndex: undefined }))
-    })
-  })
-  console.log(await response.json())
+export async function showAllChapters(mangaPath) {
+  await chaptersCollection.updateMany({ mangaPath }, { $set: { hidden: false, newIndex: null } })
 }
 
-export async function markAllChapters(token, manga, asRead, readDate = null) {
-  const details = await getMangaDetail(token, manga)
-
-  const response = await fetch(`${rootPath}/${manga}/Description.json:/content`, {
-    method: 'PUT',
-    headers: new Headers([
-      ['Authorization', `Bearer ${token}`],
-      ['Content-Type', 'application/json']
-    ]),
-    body: JSON.stringify({
-      ...details,
-      chapters: details.chapters.map(ch => ({
-        ...ch,
-        read: asRead === true ? (readDate ?? new Date()).toISOString() : false
-      }))
-    })
-  })
-  console.log(await response.json())
+export async function markAllChapters(mangaPath, asRead, readDate = null) {
+  await chaptersCollection.updateMany(
+    { mangaPath },
+    { $set: { read: asRead, readAt: asRead ? readDate ?? new Date() : null } }
+  )
 }
 
-export async function moveChapter(token, manga, chapterPath, shouldMoveUp) {
-  const details = await getMangaDetail(token, manga),
-    chapters = details.chapters
+export async function moveChapter(mangaPath, chapterId, shouldMoveUp) {
+  const allChapters = await chaptersCollection.find({ mangaPath }).toArray(),
+    chapters = allChapters
       .filter(ch => !ch.hidden)
       .map(ch => ({ ...ch, realIndex: ch.newIndex === null ? ch.index : ch.newIndex })),
-    currentChapterIndex = chapters.find(ch => ch.path === chapterPath).realIndex,
+    currentChapterIndex = chapters.find(ch => ch._id.toString() === chapterId).realIndex,
     newChapterIndex = shouldMoveUp
       ? chapters.reduce((pr, cu) => (cu.realIndex > pr && cu.realIndex < currentChapterIndex ? cu.realIndex : pr), -1)
       : chapters.reduce(
           (pr, cu) => (cu.realIndex < pr && cu.realIndex > currentChapterIndex ? cu.realIndex : pr),
           Number.MAX_SAFE_INTEGER
         ),
-    newChapterPath = chapters.find(ch => ch.realIndex === newChapterIndex).path
-
-  let newChapters = details.chapters
+    newChapterPath = chapters.find(ch => ch.realIndex === newChapterIndex).chapterPath
 
   if (newChapterIndex !== -1 && newChapterIndex !== Number.MAX_SAFE_INTEGER) {
-    const swapperArrayIndex = newChapters.findIndex(ch => ch.path === newChapterPath),
-      currentArrayindex = newChapters.findIndex(ch => ch.path === chapterPath)
-    newChapters[swapperArrayIndex].newIndex = currentChapterIndex
-    newChapters[currentArrayindex].newIndex = newChapterIndex
+    await chaptersCollection.updateOne({ _id: ObjectId(chapterId) }, { $set: { newIndex: newChapterIndex } })
+    await chaptersCollection.updateOne(
+      { mangaPath, chapterPath: newChapterPath },
+      { $set: { newIndex: currentChapterIndex } }
+    )
   }
-
-  const response = await fetch(`${rootPath}/${manga}/Description.json:/content`, {
-    method: 'PUT',
-    headers: new Headers([
-      ['Authorization', `Bearer ${token}`],
-      ['Content-Type', 'application/json']
-    ]),
-    body: JSON.stringify({ ...details, chapters: newChapters.map(ch => ({ ...ch, realIndex: undefined })) })
-  })
-  console.log(await response.json())
 }
 
-export async function getNextUnreadChapter(token, manga) {
-  const details = await getMangaDetail(token, manga),
-    chapters = details.chapters.filter(ch => !ch.hidden).map(ch => ({ ...ch, realIndex: ch.newIndex ?? ch.index }))
+export async function getNextUnreadChapter(mangaPath) {
+  const allChapters = await chaptersCollection.find({ mangaPath }).toArray(),
+    chapters = allChapters.chapters.filter(ch => !ch.hidden).map(ch => ({ ...ch, realIndex: ch.newIndex ?? ch.index }))
 
-  if (chapters.length === 0) return details.chapters[0].path
+  if (chapters.length === 0) return allChapters[0].chapterPath
 
   const lastReadChapterIndex = chapters
-    .filter(ch => ch.read !== false)
+    .filter(ch => ch.read)
     .reduce((pr, cu) => (cu.realIndex > pr ? cu.realIndex : pr), -1)
   const thresholdIndex = chapters.reduce(
     (pr, cu) => (cu.realIndex < pr && cu.realIndex > lastReadChapterIndex ? cu.realIndex : pr),
@@ -182,21 +126,21 @@ export async function getNextUnreadChapter(token, manga) {
 
   if (thresholdIndex === Number.MAX_SAFE_INTEGER) {
     chapters.sort((a, b) => a.realIndex - b.realIndex)
-    return chapters[0].path
+    return chapters[0].chapterPath
   } else {
-    return chapters.find(ch => ch.realIndex === thresholdIndex).path
+    return chapters.find(ch => ch.realIndex === thresholdIndex).chapterPath
   }
 }
 
-export async function getNextChapter(token, manga, chapter) {
-  console.log('123412343HEYYYY')
-  const details = await getMangaDetail(token, manga),
-    chapters = details.chapters.filter(ch => !ch.hidden).map(ch => ({ ...ch, realIndex: ch.newIndex ?? ch.index }))
+export async function getNextChapter(mangaPath, chapterPath) {
+  const allChapters = await chaptersCollection.find({ mangaPath }).toArray(),
+    chapters = allChapters.filter(ch => !ch.hidden).map(ch => ({ ...ch, realIndex: ch.newIndex ?? ch.index }))
 
   if (chapters.length === 0) return null
 
-  const currentChapterIndex = chapters.find(ch => ch.path === chapter)?.realIndex
+  const currentChapterIndex = chapters.find(ch => ch.chapterPath === chapterPath)?.realIndex
   if (currentChapterIndex === null || currentChapterIndex === undefined) return null
+
   const thresholdIndex = chapters.reduce(
     (pr, cu) => (cu.realIndex < pr && cu.realIndex > currentChapterIndex ? cu.realIndex : pr),
     Number.MAX_SAFE_INTEGER
@@ -209,19 +153,19 @@ export async function getNextChapter(token, manga, chapter) {
   }
 }
 
-export async function getPreviousChapter(token, manga, chapter) {
-  console.log('HEYYYY')
-  const details = await getMangaDetail(token, manga),
-    chapters = details.chapters.filter(ch => !ch.hidden).map(ch => ({ ...ch, realIndex: ch.newIndex ?? ch.index }))
+export async function getPreviousChapter(mangaPath, chapterPath) {
+  const allChapters = await chaptersCollection.find({ mangaPath }).toArray(),
+    chapters = allChapters.filter(ch => !ch.hidden).map(ch => ({ ...ch, realIndex: ch.newIndex ?? ch.index }))
 
   if (chapters.length === 0) return null
 
-  const currentChapterIndex = chapters.find(ch => ch.path === chapter).realIndex
+  const currentChapterIndex = chapters.find(ch => ch.chapterPath === chapterPath)?.realIndex
+  if (currentChapterIndex === null || currentChapterIndex === undefined) return null
+
   const thresholdIndex = chapters.reduce(
     (pr, cu) => (cu.realIndex > pr && cu.realIndex < currentChapterIndex ? cu.realIndex : pr),
     -1
   )
-  console.log(currentChapterIndex, thresholdIndex)
 
   if (thresholdIndex === -1) {
     return null
