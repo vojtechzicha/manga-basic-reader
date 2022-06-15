@@ -114,7 +114,6 @@ export async function handleRedirect(request) {
   }
 
   session.set('token', body.access_token)
-  writeFile('/Users/vojtechzicha/OneDrive/DMS/MangaGoArchive/refresh-token.json', JSON.stringify({}))
 
   return redirect('/', {
     headers: new Headers([['Set-Cookie', await commitSession(session)]])
