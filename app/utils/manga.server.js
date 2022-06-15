@@ -112,7 +112,7 @@ export async function moveChapter(mangaPath, chapterId, shouldMoveUp) {
 
 export async function getNextUnreadChapter(mangaPath) {
   const allChapters = await chaptersCollection.find({ mangaPath }).toArray(),
-    chapters = allChapters.chapters.filter(ch => !ch.hidden).map(ch => ({ ...ch, realIndex: ch.newIndex ?? ch.index }))
+    chapters = allChapters.filter(ch => !ch.hidden).map(ch => ({ ...ch, realIndex: ch.newIndex ?? ch.index }))
 
   if (chapters.length === 0) return allChapters[0].chapterPath
 
