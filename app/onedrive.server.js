@@ -55,6 +55,15 @@ export async function authorize(request, callback) {
     const { user, token } = await authenticate(request, session)
     if (!user || !token) throw new Error('Unauthorized')
 
+    const response = await fetch('https://graph.microsoft.com/v1.0/me/drives', {
+      method: 'GET',
+      headers: new Headers([['Authorization', `Bearer ${token}`]])
+    }).then(r => r.json())
+
+    if (response.error !== undefined) {
+      throw response.error
+    }
+
     try {
       return await callback({ token })
     } catch (e) {

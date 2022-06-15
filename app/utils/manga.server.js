@@ -15,7 +15,7 @@ async function fetchOnedrive(path, token) {
 }
 
 export async function getAllMangaSeries() {
-  const data = await mangasCollection
+  return await mangasCollection
     .find(
       {},
       {
@@ -24,14 +24,50 @@ export async function getAllMangaSeries() {
       }
     )
     .toArray()
-  return data
 }
+
 export async function getMangaSeriesByGenre() {
   return (
     await mangasCollection.find({}, { projection: { 'request.slug': 1, 'meta.name': 1, 'meta.genres': 1 } }).toArray()
   )
     .reduce((pr, manga) => [...pr, ...manga.meta.genres.map(genre => [genre, manga])], [])
     .reduce((pr, cu) => ({ ...pr, [cu[0]]: [...(pr[cu[0]] === undefined ? [] : pr[cu[0]]), cu[1]] }), {})
+}
+
+export async function getMangaSeriesOnDeck() {
+  const mangaList = await chaptersCollection
+    .aggregate([
+      {
+        $group: {
+          _id: { mangaPath: '$mangaPath', read: '$read' },
+          count: { $count: {} },
+          newestRead: { $max: '$readAt' }
+        }
+      }
+    ])
+    .toArray()
+  let filteredList = mangaList
+    .map(group => {
+      if (group._id.read) return null
+      const readPart = mangaList.find(gr => gr._id.mangaPath === group._id.mangaPath && gr._id.read)
+      if (readPart === undefined) return null
+      return {
+        mangaPath: group._id.mangaPath,
+        date: readPart.newestRead
+      }
+    })
+    .filter(group => group !== null)
+  filteredList.sort((a, b) => b.date - a.date)
+
+  return await mangasCollection
+    .find(
+      { 'request.slug': { $in: filteredList.map(i => i.mangaPath) } },
+      {
+        sort: { 'meta.name': 1 },
+        projection: { 'meta.name': 1, 'request.slug': 1 }
+      }
+    )
+    .toArray()
 }
 
 export async function getMangaDetail(mangaPath) {
