@@ -18,7 +18,19 @@ export default function Index() {
 
   return (
     <div style={{ fontFamily: 'system-ui, sans-serif', lineHeight: '1.4' }}>
-      <h1>Manga Reader</h1>
+      <table>
+        <tbody>
+          <tr>
+            <td>
+              <img src='/logo.png' alt='Manga Reader logo' />
+            </td>
+            <td>
+              <h1>Manga Reader</h1>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
       <h2>All Series List</h2>
       <ul>
         {Object.keys(data.all)

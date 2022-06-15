@@ -12,6 +12,7 @@ export async function action({ request, params: { series, chapterPath } }) {
         ? await getPreviousChapter(token, series, chapterPath)
         : await getNextChapter(token, series, chapterPath)
 
+    await markChapter(token, series, chapterPath, action === 'next-chapter')
     if (targetChapter === null) {
       return redirect(`/manga/${series}`)
     } else {
