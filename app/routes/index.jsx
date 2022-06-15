@@ -2,27 +2,41 @@ import { Link, useLoaderData } from '@remix-run/react'
 import { Fragment, useState } from 'react'
 import { authorize } from '../onedrive.server'
 
-import { getAllMangaSeries, getMangaSeriesByGenre, getMangaSeriesOnDeck } from '../utils/manga.server'
+import {
+  getAllMangaSeries,
+  getMangaSeriesByGenre,
+  getMangaSeriesOnDeck,
+  getNewlyUpdatedSeries
+} from '../utils/manga.server'
 
 export async function loader({ request }) {
   return authorize(request, async () => {
     return {
       all: await getAllMangaSeries(),
       byGenre: await getMangaSeriesByGenre(),
-      onDeck: await getMangaSeriesOnDeck()
+      onDeck: await getMangaSeriesOnDeck(),
+      lastUpdated: await getNewlyUpdatedSeries()
     }
   })
 }
 
-function OnDeckCell({ manga }) {
+function MangaViewCell({ manga }) {
   return (
     <td>
       <Link to={`manga/${manga.request.slug}/read`}>
-        <img
-          src={`/manga/image/${manga.request.slug}`}
-          alt='Manga thumbnail'
-          style={{ width: '180px', height: 'auto' }}
-        />
+        {manga.thumbnail !== undefined ? (
+          <img
+            src={`data:image/jpeg;base64, ${manga.thumbnail.toString('base64')}`}
+            alt='Manga thumbnail'
+            style={{ width: '180px', height: 'auto' }}
+          />
+        ) : (
+          <img
+            src={`/manga/image/${manga.request.slug}`}
+            alt='Manga thumbnail'
+            style={{ width: '180px', height: 'auto' }}
+          />
+        )}
       </Link>
       <br />
       <Link to={`manga/${manga.request.slug}`}>{manga.meta.name}</Link>
@@ -30,9 +44,51 @@ function OnDeckCell({ manga }) {
   )
 }
 
+function MangaViewTable({ mangas, heading, showAllText = 'show all' }) {
+  const [showAll, setShowAll] = useState(false)
+
+  return mangas.length > 0 ? (
+    <>
+      {heading}
+      <table style={{ borderCollapse: 'separate', borderSpacing: '8px' }}>
+        <tbody>
+          <tr>
+            {mangas.slice(0, 7).map(manga => (
+              <MangaViewCell key={manga._id.toString()} manga={manga} />
+            ))}
+          </tr>
+          {mangas.length > 7 ? (
+            showAll ? (
+              [...Array(Math.ceil((mangas.length - 7) / 7)).keys()]
+                .map(i => (i + 1) * 7)
+                .map(startIndex => (
+                  <tr key={startIndex}>
+                    {mangas.slice(startIndex, startIndex + 7).map(manga => (
+                      <MangaViewCell key={manga._id.toString()} manga={manga} />
+                    ))}
+                  </tr>
+                ))
+            ) : (
+              <tr>
+                <td rowspan={7}>
+                  <button
+                    onClick={() => {
+                      setShowAll(true)
+                    }}>
+                    {showAllText}
+                  </button>
+                </td>
+              </tr>
+            )
+          ) : null}
+        </tbody>
+      </table>
+    </>
+  ) : null
+}
+
 export default function Index() {
   const data = useLoaderData()
-  const [showAllOnDeck, setShowAllOnDeck] = useState(false)
 
   return (
     <div style={{ fontFamily: 'system-ui, sans-serif', lineHeight: '1.4' }}>
@@ -48,70 +104,15 @@ export default function Index() {
           </tr>
         </tbody>
       </table>
-      {data.onDeck.length > 0 ? (
-        <>
-          <h2>On Deck</h2>
-          <table style={{ borderCollapse: 'separate', borderSpacing: '8px' }}>
-            <tbody>
-              <tr>
-                {data.onDeck.slice(0, 7).map(manga => (
-                  <OnDeckCell key={manga._id.toString()} manga={manga} />
-                ))}
-              </tr>
-              {data.onDeck.length > 7 ? (
-                showAllOnDeck ? (
-                  <tr>
-                    <td rowspan={7}>
-                      <button
-                        onClick={() => {
-                          setShowAllOnDeck(true)
-                        }}>
-                        show all
-                      </button>
-                    </td>
-                  </tr>
-                ) : (
-                  [...Array(Math.ceil((data.onDeck.length - 7) / 7)).keys()]
-                    .map(i => (i + 1) * 7)
-                    .map(startIndex => (
-                      <tr key={startIndex}>
-                        {data.onDeck.slice(startIndex, startIndex + 7).map(manga => (
-                          <OnDeckCell key={manga._id.toString()} manga={manga} />
-                        ))}
-                      </tr>
-                    ))
-                )
-              ) : null}
-            </tbody>
-          </table>
-        </>
-      ) : null}
-      <h2>All Series List</h2>
-      <ul>
-        {data.all.map(manga => (
-          <li key={manga._id.toString()}>
-            <Link to={`manga/${manga.request.slug}`}>{manga.meta.name}</Link>
-          </li>
-        ))}
-      </ul>
+      <MangaViewTable mangas={data.onDeck} heading={<h2>On Deck</h2>} />
+      <MangaViewTable mangas={data.lastUpdated} heading={<h2>Last Updated Series</h2>} />
       <h2>List by Genre</h2>
       {Object.keys(data.byGenre)
         .sort()
         .map(genre => (
-          <Fragment key={genre}>
-            <h3>{genre}</h3>
-            <ul>
-              {data.byGenre[genre]
-                .slice()
-                .sort((a, b) => a.meta.name.localeCompare(b.meta.name))
-                .map(series => (
-                  <li key={series.request.slug}>
-                    <Link to={`manga/${series.request.slug}`}>{series.meta.name}</Link>
-                  </li>
-                ))}
-            </ul>
-          </Fragment>
+          <MangaViewTable key={genre} mangas={data.byGenre[genre]} heading={<h3>Discover {genre}</h3>} />
         ))}
+      <MangaViewTable mangas={data.all} heading={<h2>All Series</h2>} />
     </div>
   )
 }

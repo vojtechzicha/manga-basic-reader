@@ -20,18 +20,48 @@ export async function getAllMangaSeries() {
       {},
       {
         sort: { 'meta.name': 1 },
-        projection: { 'meta.name': 1, 'request.slug': 1 }
+        projection: { 'meta.name': 1, 'request.slug': 1, thumbnail: 1 }
       }
     )
     .toArray()
 }
 
+function shuffleArray(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[array[i], array[j]] = [array[j], array[i]]
+  }
+}
+
 export async function getMangaSeriesByGenre() {
-  return (
-    await mangasCollection.find({}, { projection: { 'request.slug': 1, 'meta.name': 1, 'meta.genres': 1 } }).toArray()
+  const readMangalist = (
+    await chaptersCollection
+      .aggregate([
+        { $match: { read: true } },
+        {
+          $group: {
+            _id: { mangaPath: '$mangaPath' }
+          }
+        }
+      ])
+      .toArray()
+  ).map(gr => gr._id.mangaPath)
+
+  let genres = (
+    await mangasCollection
+      .find(
+        { 'request.slug': { $nin: readMangalist } },
+        { projection: { 'request.slug': 1, 'meta.name': 1, 'meta.genres': 1, thumbnail: 1 } }
+      )
+      .toArray()
   )
     .reduce((pr, manga) => [...pr, ...manga.meta.genres.map(genre => [genre, manga])], [])
     .reduce((pr, cu) => ({ ...pr, [cu[0]]: [...(pr[cu[0]] === undefined ? [] : pr[cu[0]]), cu[1]] }), {})
+
+  for (let genre of Object.keys(genres)) {
+    shuffleArray(genres[genre])
+  }
+  return genres
 }
 
 export async function getMangaSeriesOnDeck() {
@@ -64,10 +94,45 @@ export async function getMangaSeriesOnDeck() {
       { 'request.slug': { $in: filteredList.map(i => i.mangaPath) } },
       {
         sort: { 'meta.name': 1 },
-        projection: { 'meta.name': 1, 'request.slug': 1 }
+        projection: { 'meta.name': 1, 'request.slug': 1, thumbnail: 1 }
       }
     )
     .toArray()
+}
+
+export async function getNewlyUpdatedSeries() {
+  let date30DaysBefore = new Date()
+  date30DaysBefore.setDate(date30DaysBefore.getDate() - 30)
+
+  const mangaList = await chaptersCollection
+    .aggregate([
+      {
+        $group: {
+          _id: { mangaPath: '$mangaPath' },
+          newestUpdate: { $max: '$lastUpdated' }
+        }
+      },
+      { $match: { newestUpdate: { $gt: date30DaysBefore } } },
+      { $sort: { newestUpdate: -1 } }
+      // { $limit: 10 }
+    ])
+    .toArray()
+  const filteredList = await mangasCollection
+    .find(
+      { 'request.slug': { $in: mangaList.map(i => i._id.mangaPath) } },
+      {
+        sort: { 'meta.name': 1 },
+        projection: { 'meta.name': 1, 'request.slug': 1, thumbnail: 1 }
+      }
+    )
+    .toArray()
+
+  let joinedList = filteredList.map(ma => ({
+    ...ma,
+    updatedAt: mangaList.find(m => m._id.mangaPath === ma.request.slug)?.newestUpdate
+  }))
+  joinedList.sort((a, b) => b.updatedAt - a.updatedAt)
+  return joinedList
 }
 
 export async function getMangaDetail(mangaPath) {
@@ -94,11 +159,9 @@ export function getImage(token, manga, chapter, image) {
   }).then(response => response.body)
 }
 
-export function getThumbnailImage(token, manga) {
-  return fetch(`${rootPath}/${manga}/Thumbnail.jpg:/content`, {
-    method: 'GET',
-    headers: new Headers([['Authorization', `Bearer ${token}`]])
-  }).then(response => response.body)
+export async function getThumbnailImage(mangaPath) {
+  const manga = await mangasCollection.findOne({ 'request.slug': mangaPath }, { projection: { thumbnail: 1, _id: 0 } })
+  return manga.thumbnail.buffer
 }
 
 export async function hideChapter(chapterId) {
