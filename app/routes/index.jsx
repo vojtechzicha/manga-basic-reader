@@ -1,5 +1,5 @@
 import { Link, useLoaderData } from '@remix-run/react'
-import { Fragment, useState } from 'react'
+import { Fragment, useState, useEffect } from 'react'
 import { authorize } from '../onedrive.server'
 
 import {
@@ -22,68 +22,90 @@ export async function loader({ request }) {
 
 function MangaViewCell({ manga }) {
   return (
-    <td style={{ width: '200px' }}>
-      <Link to={`manga/${manga.request.slug}/read`}>
-        {manga.thumbnail !== undefined ? (
-          <img
-            src={`data:image/jpeg;base64, ${manga.thumbnail.toString('base64')}`}
-            alt='Manga thumbnail'
-            style={{ width: '180px', height: 'auto' }}
-          />
-        ) : (
-          <img
-            src={`/manga/image/${manga.request.slug}`}
-            alt='Manga thumbnail'
-            style={{ width: '180px', height: 'auto' }}
-          />
-        )}
-      </Link>
-      <br />
-      <Link to={`manga/${manga.request.slug}`}>{manga.meta.name}</Link>
-    </td>
+    <div className='max-w-sm sm:w-1/2 md:w-1/4 lg:w-1/6'>
+      <div className='team-item'>
+        <div className='team-img relative'>
+          <Link to={`manga/${manga.request.slug}/read`}>
+            {manga.thumbnail !== undefined ? (
+              <img
+                className='img-fluid'
+                src={`data:image/jpeg;base64, ${manga.thumbnail.toString('base64')}`}
+                alt='Manga thumbnail'
+                style={{ width: '370px', height: '320px', objectFit: 'cover' }}
+              />
+            ) : (
+              <img
+                className='img-fluid'
+                src={`/manga/image/${manga.request.slug}`}
+                alt='Manga thumbnail'
+                style={{ width: '370px', height: '320px', objectFit: 'cover' }}
+              />
+            )}
+          </Link>
+        </div>
+        <div className='text-center px-5 py-3'>
+          <h3 className='team-name'>
+            <Link to={`manga/${manga.request.slug}`}>{manga.meta.name}</Link>
+          </h3>
+        </div>
+      </div>
+    </div>
   )
 }
 
-function MangaViewTable({ mangas, heading, showAllText = 'show all' }) {
-  const [showAll, setShowAll] = useState(false)
+function MangaViewTable({
+  id,
+  mangas,
+  heading,
+  showAllText = 'Show All',
+  useBlue = false,
+  lowerLevel = false,
+  maxRows = 2
+}) {
+  const [showAll, setShowAll] = useState(true)
+
+  useEffect(() => {
+    const grid = Array.from(document.querySelector(`#${id}`)?.children)
+    const breakIndex = grid.findIndex(item => item.offsetTop > grid[0].offsetTop)
+    const numPerRow = breakIndex === -1 ? grid.length : breakIndex
+
+    if (mangas.length > numPerRow * maxRows) {
+      setShowAll(numPerRow * maxRows)
+    }
+  }, [id, mangas.length, maxRows])
 
   return mangas.length > 0 ? (
-    <>
-      {heading}
-      <table style={{ borderCollapse: 'separate', borderSpacing: '8px' }}>
-        <tbody>
-          <tr>
-            {mangas.slice(0, 7).map(manga => (
-              <MangaViewCell key={manga._id.toString()} manga={manga} />
-            ))}
-          </tr>
-          {mangas.length > 7 ? (
-            showAll ? (
-              [...Array(Math.ceil((mangas.length - 7) / 7)).keys()]
-                .map(i => (i + 1) * 7)
-                .map(startIndex => (
-                  <tr key={startIndex}>
-                    {mangas.slice(startIndex, startIndex + 7).map(manga => (
-                      <MangaViewCell key={manga._id.toString()} manga={manga} />
-                    ))}
-                  </tr>
-                ))
-            ) : (
-              <tr>
-                <td rowSpan={7}>
-                  <button
-                    onClick={() => {
-                      setShowAll(true)
-                    }}>
-                    {showAllText}
-                  </button>
-                </td>
-              </tr>
-            )
+    <section id='team' className={`py-24 text-center ${useBlue ? 'bg-blue-100' : ''}`}>
+      <div className='container'>
+        <div className='text-center'>
+          {lowerLevel ? (
+            <h3 className='mb-10 section-heading-lower wow fadeInDown' data-wow-delay='0.3s' id={`heading-${id}`}>
+              {heading}
+            </h3>
+          ) : (
+            <h2 className='mb-12 section-heading wow fadeInDown' data-wow-delay='0.3s' id={`heading-${id}`}>
+              {heading}
+            </h2>
+          )}
+        </div>
+        <div className='flex flex-wrap justify-center' id={id}>
+          {mangas.slice(0, showAll === true ? mangas.length : showAll).map(manga => (
+            <MangaViewCell key={manga._id.toString()} manga={manga} />
+          ))}
+          {showAll !== true ? (
+            <div className='submit-button mx-3'>
+              <button
+                className='btn'
+                onClick={() => {
+                  setShowAll(true)
+                }}>
+                show {mangas.length - showAll} more
+              </button>
+            </div>
           ) : null}
-        </tbody>
-      </table>
-    </>
+        </div>
+      </div>
+    </section>
   ) : null
 }
 
@@ -91,28 +113,24 @@ export default function Index() {
   const data = useLoaderData()
 
   return (
-    <div style={{ fontFamily: 'system-ui, sans-serif', lineHeight: '1.4' }}>
-      <table>
-        <tbody>
-          <tr>
-            <td>
-              <img src='/logo.png' alt='Manga Reader logo' />
-            </td>
-            <td>
-              <h1>Manga Reader</h1>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      <MangaViewTable mangas={data.onDeck} heading={<h2>On Deck</h2>} />
-      <MangaViewTable mangas={data.lastUpdated} heading={<h2>Last Updated Series</h2>} />
-      <h2>List by Genre</h2>
+    <>
+      <MangaViewTable id='on-deck' mangas={data.onDeck} heading='On Deck' useBlue={true} maxRows={2} />
+      <MangaViewTable id='last-updated' mangas={data.lastUpdated} heading='Last Updated Series' maxRows={1} />
       {Object.keys(data.byGenre)
         .sort()
-        .map(genre => (
-          <MangaViewTable key={genre} mangas={data.byGenre[genre]} heading={<h3>Discover {genre}</h3>} />
+        .filter(genre => data.byGenre[genre].length > 1)
+        .map((genre, i) => (
+          <MangaViewTable
+            id={`genre-${i}`}
+            key={genre}
+            mangas={data.byGenre[genre]}
+            heading={`Discover ${genre}`}
+            lowerLevel={true}
+            useBlue={i % 2 === 0}
+            maxRows={1}
+          />
         ))}
-      <MangaViewTable mangas={data.all} heading={<h2>All Series</h2>} />
-    </div>
+      <MangaViewTable id='all' mangas={data.all} heading='All Series' maxRows={2} />
+    </>
   )
 }

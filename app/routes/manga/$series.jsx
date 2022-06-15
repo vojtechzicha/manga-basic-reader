@@ -1,7 +1,7 @@
 import { redirect } from '@remix-run/node'
 import { Link, useLoaderData, Form } from '@remix-run/react'
 import { authorize } from '../../onedrive.server'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import {
   getMangaDetail,
@@ -16,23 +16,38 @@ import {
 export async function action({ request, params: { series } }) {
   return authorize(request, async () => {
     const formData = await request.formData(),
-      chapterId = formData.get('_id'),
       action = formData.get('action')
 
     if (action === 'start-reading') {
       return redirect(`/manga/${series}/chapter/${await getNextUnreadChapter(series)}`)
-    }
-
-    if (action === 'hide') {
-      await hideChapter(chapterId)
-    } else if (action === 'show-all') {
-      await showAllChapters(series)
-    } else if (action.startsWith('move')) {
-      await moveChapter(series, chapterId, action === 'move-up')
-    } else if (action === 'mark') {
-      await markChapter(chapterId, formData.get('mark-as') === 'read')
     } else if (action === 'mark-all') {
       await markAllChapters(series, formData.get('mark-as') === 'read')
+      return redirect(`/manga/${series}`)
+    } else if (action === 'show-all') {
+      await showAllChapters(series)
+      return redirect(`/manga/${series}`)
+    }
+
+    const chapters = (await getMangaDetail(series)).chapters
+
+    for (let chapter of chapters) {
+      if (formData.has(`action-move-down-${chapter._id.toString()}`)) {
+        await moveChapter(series, chapter._id.toString(), false)
+        return redirect(`/manga/${series}`)
+      } else if (formData.has(`action-move-up-${chapter._id.toString()}`)) {
+        await moveChapter(series, chapter._id.toString(), true)
+        return redirect(`/manga/${series}`)
+      }
+    }
+
+    for (let chapterId of formData.getAll('chapter-check')) {
+      if (formData.has('action-hide')) {
+        await hideChapter(chapterId)
+      } else if (formData.has('action-mark-read')) {
+        await markChapter(chapterId, true)
+      } else if (formData.has('action-mark-unread')) {
+        await markChapter(chapterId, false)
+      }
     }
 
     return redirect(`/manga/${series}`)
@@ -47,169 +62,241 @@ export async function loader({ request, params: { series } }) {
 
 export default function MangaSeries() {
   const { details, chapters: rawChapters } = useLoaderData()
-  const [showEditTools, toggleEditTools] = useState(false)
-  console.log(rawChapters)
+  const [showEditTools, toggleEditTools] = useState(true)
+
+  useEffect(() => {
+    toggleEditTools(false)
+  }, [])
 
   let chapters = rawChapters.map(ch => ({ ...ch, realIndex: ch.newIndex === null ? ch.index : ch.newIndex }))
   chapters.sort((chA, chB) => chA.realIndex - chB.realIndex)
 
   return (
-    <div style={{ fontFamily: 'system-ui, sans-serif', lineHeight: '1.4' }}>
-      <h1>{details.meta.name}</h1>
-      <table>
-        <tbody>
-          <tr>
-            <td>
-              <img src={`/manga/image/${details.request.slug}`} alt='Manga thumbnail' />
-            </td>
-            <td>
-              <ul>
-                <li>
-                  <strong>Status: </strong>
-                  {details.meta.status}
-                </li>
-                <li>
-                  <strong>Author: </strong>
-                  {details.meta.author}
-                </li>
-                <li>
-                  <strong>Genres: </strong>
-                  {details.meta.genres.join(', ')}
-                </li>
-                <li>
-                  <strong>Alternative title: </strong>
-                  {details.meta.alternativeTitle}
-                </li>
-              </ul>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      <p>{details.meta.summary}</p>
-      <p>
-        <Link to='/'>Back to Manga Listing</Link>
-      </p>
-      <hr />
-      <Form method='POST'>
-        <input type='hidden' name='action' value='start-reading' />
-        <input
-          type='submit'
-          value={
-            chapters.filter(ch => ch.read !== false).length > 0 && chapters.filter(ch => ch.read === false).length > 0
-              ? 'Continue reading'
-              : 'Start reading'
-          }
-        />
-      </Form>
-      <h2>Chapters</h2>
-      <table>
-        <tbody>
-          {chapters
-            .filter(ch => !ch.hidden)
-            .map((ch, chi) => ({ ...ch, displayIndex: chi }))
-            .map(chapter => (
-              <tr key={chapter._id.toString()}>
-                <td>
-                  {chapter.read !== false ? (
-                    <em>
-                      <Link to={`chapter/${chapter.chapterPath}`}>{chapter.name}</Link>
-                    </em>
-                  ) : (
-                    <>
-                      <Link to={`chapter/${chapter.chapterPath}`}>{chapter.name}</Link>
-                    </>
-                  )}
-                </td>
-                {showEditTools && (
-                  <td>
-                    <Form method='POST' style={{ display: 'inline' }}>
-                      <input type='hidden' name='_id' value={chapter._id.toString()} />
-                      <input type='hidden' name='action' value='hide' />
-                      <input type='submit' value={'❌'} />
-                    </Form>
-                  </td>
-                )}
-                {showEditTools &&
-                  (chapter.displayIndex > 0 ? (
-                    <td>
-                      <Form method='POST' style={{ display: 'inline' }}>
-                        <input type='hidden' name='_id' value={chapter._id.toString()} />
-                        <input type='hidden' name='action' value='move-up' />
-                        <input type='submit' value={'⬆️'} />
-                      </Form>
-                    </td>
-                  ) : (
-                    <td>&nbsp;</td>
-                  ))}
-                {showEditTools &&
-                  (chapter.displayIndex < chapters.filter(ch => !ch.hidden).length - 1 ? (
-                    <td>
-                      <Form method='POST' style={{ display: 'inline' }}>
-                        <input type='hidden' name='_id' value={chapter._id.toString()} />
-                        <input type='hidden' name='action' value='mode-down' />
-                        <input type='submit' value={'⬇️'} />
-                      </Form>
-                    </td>
-                  ) : (
-                    <td>&nbsp;</td>
-                  ))}
-                {showEditTools ? (
-                  <td>
-                    <Form method='POST' style={{ display: 'inline' }}>
-                      <input type='hidden' name='_id' value={chapter._id.toString()} />
-                      <input type='hidden' name='action' value='mark' />
-                      <input type='hidden' name='mark-as' value={chapter.read ? 'unread' : 'read'} />
-                      <input type='submit' value={chapter.read ? '⭐' : '✔️'} />
-                    </Form>
-                  </td>
-                ) : (
-                  <td>&nbsp;</td>
-                )}
-              </tr>
-            ))}
-        </tbody>
-        <tfoot>
-          {showEditTools && chapters.filter(ch => ch.hidden).length > 0 ? (
-            <tr>
-              <td rowSpan={4}>
-                <Form method='POST' style={{ display: 'inline' }}>
-                  <input type='hidden' name='action' value='show-all' />
-                  <input type='submit' value={'Show all hidden chapters'} />
-                </Form>
-              </td>
-            </tr>
-          ) : null}
-          {showEditTools && chapters.filter(ch => ch.read !== false).length > 0 ? (
-            <tr>
-              <td rowSpan={4}>
-                <Form method='POST' style={{ display: 'inline' }}>
-                  <input type='hidden' name='action' value='mark-all' />
-                  <input type='hidden' name='mark-as' value='unread' />
-                  <input type='submit' value={'Mark all as unread'} />
-                </Form>
-              </td>
-            </tr>
-          ) : null}
-          {showEditTools && chapters.filter(ch => ch.read !== false).length === 0 ? (
-            <tr>
-              <td rowSpan={4}>
-                <Form method='POST' style={{ display: 'inline' }}>
-                  <input type='hidden' name='action' value='mark-all' />
-                  <input type='hidden' name='mark-as' value='read' />
-                  <input type='submit' value={'Mark all as read'} />
-                </Form>
-              </td>
-            </tr>
-          ) : null}
-        </tfoot>
-      </table>
-      <hr />
-      <button
-        onClick={() => {
-          toggleEditTools(!showEditTools)
-        }}>
-        {showEditTools ? 'Hide ' : 'Show '}edit tools
-      </button>
+    <>
+      <Header details={details} chapters={chapters} />
+      <section id='Subscribes' className='text-center py-20'>
+        <div className='container text-left'>
+          <h4 className='mb-3 section-heading wow fadeInUp' data-wow-delay='0.3s'>
+            Chapters
+          </h4>
+          <div className='relative overflow-x-auto shadow-md sm:rounded-lg'>
+            <Form method='POST'>
+              {showEditTools ? (
+                <div className='flex flex-wrap items-center'>
+                  <div className='p-4'>
+                    <label for='table-search' className='sr-only'>
+                      Search
+                    </label>
+                    <div className='relative mt-1'>
+                      <div className='absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none'>
+                        <svg
+                          className='w-5 h-5 text-gray-500 dark:text-gray-400'
+                          fill='currentColor'
+                          viewBox='0 0 20 20'
+                          xmlns='http://www.w3.org/2000/svg'>
+                          <path
+                            fill-rule='evenodd'
+                            d='M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z'
+                            clip-rule='evenodd'></path>
+                        </svg>
+                      </div>
+                      <input
+                        type='text'
+                        id='table-search'
+                        className='bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-80 pl-10 p-2.5  dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500'
+                        placeholder='Search for items'
+                      />
+                    </div>
+                  </div>
+                  <div className='p-4'>
+                    <input type='submit' className='small-gray-btn' name='action-hide' value='Hide' />
+                  </div>
+                  <div className='p-4'>
+                    <input type='submit' className='small-gray-btn' name='action-mark-read' value='Mark Read' />
+                  </div>
+                  <div className='p-4'>
+                    <input type='submit' className='small-gray-btn' name='action-mark-unread' value='Mark Unread' />
+                  </div>
+                </div>
+              ) : null}
+              <table className='w-full text-sm text-left text-gray-500 dark:text-gray-400'>
+                <thead />
+                <tbody>
+                  {chapters
+                    .filter(ch => !ch.hidden)
+                    .map((ch, chi) => ({ ...ch, displayIndex: chi }))
+                    .map(chapter => (
+                      <tr
+                        key={chapter._id.toString()}
+                        className='bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600'>
+                        {showEditTools ? (
+                          <td className='w-4 p-4'>
+                            <div className='flex items-center'>
+                              <input
+                                id='checkbox-table-search-1'
+                                type='checkbox'
+                                name='chapter-check'
+                                value={chapter._id.toString()}
+                                className='w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600'
+                              />
+                              <label for='checkbox-table-search-1' className='sr-only'>
+                                checkbox
+                              </label>
+                            </div>
+                          </td>
+                        ) : null}
+                        {showEditTools &&
+                          (chapter.displayIndex > 0 ? (
+                            <td className='w-4 p-4'>
+                              <input
+                                type='submit'
+                                name={`action-move-up-${chapter._id.toString()}`}
+                                value={'⬆️'}
+                                className='small-gray-btn'
+                              />
+                            </td>
+                          ) : (
+                            <td>&nbsp;</td>
+                          ))}
+                        {showEditTools &&
+                          (chapter.displayIndex < chapters.filter(ch => !ch.hidden).length - 1 ? (
+                            <td className='w-4 p-4'>
+                              <input
+                                type='submit'
+                                name={`action-move-down-${chapter._id.toString()}`}
+                                value={'⬇️'}
+                                className='small-gray-btn'
+                              />
+                            </td>
+                          ) : (
+                            <td>&nbsp;</td>
+                          ))}
+                        {chapter.read ? (
+                          <th
+                            scope='row'
+                            className='px-6 py-4 font-medium italic text-gray-500 dark:text-white whitespace-nowrap'>
+                            <Link to={`chapter/${chapter.chapterPath}`}>{chapter.name}</Link>
+                          </th>
+                        ) : (
+                          <th
+                            scope='row'
+                            className='px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-nowrap'>
+                            <Link to={`chapter/${chapter.chapterPath}`}>{chapter.name}</Link>
+                          </th>
+                        )}
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </Form>
+            <div className='flex flex-wrap items-center'>
+              <div className='p-4'>
+                <input
+                  type='button'
+                  className='small-gray-btn'
+                  value={showEditTools ? 'Hide Edit Tools' : 'Show Edit Tools'}
+                  onClick={() => {
+                    toggleEditTools(!showEditTools)
+                  }}
+                />
+              </div>
+              {showEditTools && chapters.filter(ch => ch.read !== false).length > 0 ? (
+                <div className='p-4'>
+                  <Form method='POST' style={{ display: 'inline' }}>
+                    <input type='hidden' name='action' value='mark-all' />
+                    <input type='hidden' name='mark-as' value='unread' />
+                    <input type='submit' className='small-gray-btn' value={'Mark all as unread'} />
+                  </Form>
+                </div>
+              ) : null}
+              {showEditTools && chapters.filter(ch => ch.read !== false).length === 0 ? (
+                <div className='p-4'>
+                  <Form method='POST' style={{ display: 'inline' }}>
+                    <input type='hidden' name='action' value='mark-all' />
+                    <input type='hidden' name='mark-as' value='read' />
+                    <input type='submit' className='small-gray-btn' value={'Mark all as read'} />
+                  </Form>
+                </div>
+              ) : null}
+              {showEditTools && chapters.filter(ch => ch.hidden).length > 0 ? (
+                <div className='p-4'>
+                  <Form method='POST' style={{ display: 'inline' }}>
+                    <input type='hidden' name='action' value='show-all' />
+                    <input type='hidden' name='mark-as' value='read' />
+                    <input type='submit' className='small-gray-btn' value={'Show all hidden chapters'} />
+                  </Form>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      </section>
+    </>
+  )
+}
+
+function Header({ details, chapters }) {
+  return (
+    <div id='feature' className='bg-blue-100 pt-24 pb-5'>
+      <div className='container'>
+        <h2 className='mb-12 section-heading wow fadeInDown' data-wow-delay='0.3s'>
+          {details.meta.name}
+        </h2>
+        <div className='flex flex-wrap items-center'>
+          <div className='w-full lg:w-1/4'>
+            <div className='mx-3 lg:mr-0 lg:ml-3 wow fadeInRight' data-wow-delay='0.3s'>
+              <img src={`image/${details.request.slug}`} alt='' />
+            </div>
+          </div>
+          <div className='w-full lg:w-3/4'>
+            <div className='mb-5 lg:mb-0'>
+              <div className='flex flex-wrap'>
+                <div>
+                  <div className='flex flex-wrap mb-6 items-center'>
+                    <p className='pl-3'>
+                      <strong>Status: </strong>
+                      {details.meta.status}
+                    </p>
+                  </div>
+                  <div className='flex flex-wrap mb-6 items-center'>
+                    <p className='pl-3'>
+                      <strong>Author: </strong>
+                      {details.meta.author}
+                    </p>
+                  </div>
+                  <div className='flex flex-wrap mb-6 items-center'>
+                    <p className='pl-3'>
+                      <strong>Genres: </strong>
+                      {details.meta.genres.join(', ')}
+                    </p>
+                  </div>
+                  <div className='flex flex-wrap mb-6 items-center'>
+                    <p className='pl-3'>
+                      <strong>Alternative title: </strong>
+                      {details.meta.alternativeTitle}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className='justify-center w-full mt-10'>
+            <Form method='POST' className='text-center mb-10 wow fadeInUp' data-wow-delay='1.2s'>
+              <input type='hidden' name='action' value='start-reading' />
+              <input
+                type='submit'
+                className='btn'
+                value={
+                  chapters.filter(ch => ch.read !== false).length > 0 &&
+                  chapters.filter(ch => ch.read === false).length > 0
+                    ? 'Continue reading'
+                    : 'Start reading'
+                }
+              />
+            </Form>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

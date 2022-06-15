@@ -41,29 +41,54 @@ export default function Index() {
   const scrollUp = () => window.scrollTo(0, 0)
 
   return (
-    <div style={{ fontFamily: 'system-ui, sans-serif', lineHeight: '1.4' }}>
-      <h1>{details.meta.name}</h1>
-      <h2>{chapter.name}</h2>
-      <Link to={`/manga/${details.request.slug}`}>Back to manga listing</Link>
+    <>
+      <div id='feature' className='bg-blue-100 pt-24 pb-5 fixed top-0 left-0 w-full'>
+        <div className='container'>
+          <h2 className='mb-12 section-heading wow fadeInDown' data-wow-delay='0.3s'>
+            <Link to={`/manga/${details.request.slug}`} className='text-gray-500'>
+              {details.meta.name}
+            </Link>{' '}
+            - {chapter.name}
+          </h2>
+        </div>
+      </div>
+      <section id='hero-area' class='pt-4 pb-4'>
+        <div class='container'>
+          <div class='flex justify-between'>
+            <div class='w-full text-center'>
+              {images.map((imgSrc, index) => (
+                <>
+                  <img key={index} src={imgSrc} alt='Manga chapter' />
+                  <br />
+                </>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
       <hr />
-      {images.map((imgSrc, index) => (
-        <>
-          <img key={index} src={imgSrc} alt='Manga chapter' />
-          <br />
-        </>
-      ))}
-      <hr />
-      <Form method='POST'>
-        <input type='hidden' name='action' value='prev-chapter' />
-        <input type='hidden' name='chapter-id' value={chapter._id} />
-        <input type='submit' value='< Previous Chapter' onClick={scrollUp} />
-      </Form>
-      <Link to={`/manga/${details.request.slug}`}>Back to {details.meta.name}</Link>
-      <Form method='POST'>
-        <input type='hidden' name='action' value='next-chapter' />
-        <input type='hidden' name='chapter-id' value={chapter._id} />
-        <input type='submit' value='> Next Chapter' onClick={scrollUp} />
-      </Form>
-    </div>
+      <div id='feature' className='bg-blue-100 pt-4 pb-4'>
+        <div className='container'>
+          <div class='flex flex-wrap'>
+            <div class='w-full sm:w-1/2 md:w-1/2 lg:w-1/3'>
+              <Form method='POST'>
+                <input type='hidden' name='action' value='prev-chapter' />
+                <input type='hidden' name='chapter-id' value={chapter._id} />
+                <input type='submit' class='btn' value='< Previous Chapter' onClick={scrollUp} />
+              </Form>
+            </div>
+            <div class='w-full sm:w-1/2 md:w-1/2 lg:w-1/3'></div>
+            <div class='w-full sm:w-1/2 md:w-1/2 lg:w-1/3'>
+              <Form method='POST'>
+                <input type='hidden' name='action' value='next-chapter' />
+                <input type='hidden' name='chapter-id' value={chapter._id} />
+                <input type='submit' class='btn' value='> Next Chapter' onClick={scrollUp} />
+              </Form>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div></div>
+    </>
   )
 }
