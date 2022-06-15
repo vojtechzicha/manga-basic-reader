@@ -158,3 +158,67 @@ export async function moveChapter(token, manga, chapterPath, shouldMoveUp) {
   })
   console.log(await response.json())
 }
+
+export async function getNextUnreadChapter(token, manga) {
+  const details = await getMangaDetail(token, manga),
+    chapters = details.chapters.filter(ch => !ch.hidden).map(ch => ({ ...ch, realIndex: ch.newIndex ?? ch.index }))
+
+  if (chapters.length === 0) return details.chapters[0].path
+
+  const lastReadChapterIndex = chapters
+    .filter(ch => ch.read !== false)
+    .reduce((pr, cu) => (cu.realIndex > pr ? cu.realIndex : pr), -1)
+  const thresholdIndex = chapters.reduce(
+    (pr, cu) => (cu.realIndex < pr && cu.realIndex > lastReadChapterIndex ? cu.realIndex : pr),
+    Number.MAX_SAFE_INTEGER
+  )
+
+  if (thresholdIndex === Number.MAX_SAFE_INTEGER) {
+    chapters.sort((a, b) => a.realIndex - b.realIndex)
+    return chapters[0].path
+  } else {
+    return chapters.find(ch => ch.realIndex === thresholdIndex).path
+  }
+}
+
+export async function getNextChapter(token, manga, chapter) {
+  console.log('123412343HEYYYY')
+  const details = await getMangaDetail(token, manga),
+    chapters = details.chapters.filter(ch => !ch.hidden).map(ch => ({ ...ch, realIndex: ch.newIndex ?? ch.index }))
+
+  if (chapters.length === 0) return null
+
+  const currentChapterIndex = chapters.find(ch => ch.path === chapter)?.realIndex
+  if (currentChapterIndex === null || currentChapterIndex === undefined) return null
+  const thresholdIndex = chapters.reduce(
+    (pr, cu) => (cu.realIndex < pr && cu.realIndex > currentChapterIndex ? cu.realIndex : pr),
+    Number.MAX_SAFE_INTEGER
+  )
+
+  if (thresholdIndex === Number.MAX_SAFE_INTEGER) {
+    return null
+  } else {
+    return chapters.find(ch => ch.realIndex === thresholdIndex)
+  }
+}
+
+export async function getPreviousChapter(token, manga, chapter) {
+  console.log('HEYYYY')
+  const details = await getMangaDetail(token, manga),
+    chapters = details.chapters.filter(ch => !ch.hidden).map(ch => ({ ...ch, realIndex: ch.newIndex ?? ch.index }))
+
+  if (chapters.length === 0) return null
+
+  const currentChapterIndex = chapters.find(ch => ch.path === chapter).realIndex
+  const thresholdIndex = chapters.reduce(
+    (pr, cu) => (cu.realIndex > pr && cu.realIndex < currentChapterIndex ? cu.realIndex : pr),
+    -1
+  )
+  console.log(currentChapterIndex, thresholdIndex)
+
+  if (thresholdIndex === -1) {
+    return null
+  } else {
+    return chapters.find(ch => ch.realIndex === thresholdIndex)
+  }
+}

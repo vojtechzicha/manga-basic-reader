@@ -9,7 +9,8 @@ import {
   showAllChapters,
   moveChapter,
   markChapter,
-  markAllChapters
+  markAllChapters,
+  getNextUnreadChapter
 } from '../../utils/manga.server'
 
 export async function action({ request, params: { series } }) {
@@ -17,6 +18,10 @@ export async function action({ request, params: { series } }) {
     const formData = await request.formData(),
       chapterPath = formData.get('chapter.path'),
       action = formData.get('action')
+
+    if (action === 'start-reading') {
+      return redirect(`/manga/${series}/chapter/${await getNextUnreadChapter(token, series)}`)
+    }
 
     if (action === 'hide') {
       await hideChapter(token, series, chapterPath)
@@ -74,6 +79,17 @@ export default function MangaSeries() {
         <Link to='/'>Back to Manga Listing</Link>
       </p>
       <hr />
+      <Form method='POST'>
+        <input type='hidden' name='action' value='start-reading' />
+        <input
+          type='submit'
+          value={
+            chapters.filter(ch => ch.read !== false).length > 0 && chapters.filter(ch => ch.read === false).length > 0
+              ? 'Continue reading'
+              : 'Start reading'
+          }
+        />
+      </Form>
       <h2>Chapters</h2>
       <table>
         <tbody>

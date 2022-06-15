@@ -2,42 +2,20 @@ import { redirect } from '@remix-run/node'
 import { Link, useLoaderData, Form } from '@remix-run/react'
 import { authorize } from '../../onedrive.server'
 
-import { getImages, getMangaDetail, markChapter } from '../../utils/manga.server'
+import { getImages, getMangaDetail, markChapter, getNextChapter, getPreviousChapter } from '../../utils/manga.server'
 
 export async function action({ request, params: { series, chapterPath } }) {
   return await authorize(request, async ({ token }) => {
-    const details = await getMangaDetail(token, series)
-    const chapters = details.chapters.map(ch => ({ ...ch, realindex: ch.newIndex === null ? ch.index : ch.newIndex }))
-
     const action = (await request.formData()).get('action')
-    const myChapter = chapters.find(ch => ch.path === chapterPath)
+    const targetChapter =
+      action === 'prev-chapter'
+        ? await getPreviousChapter(token, series, chapterPath)
+        : await getNextChapter(token, series, chapterPath)
 
-    if (action === 'prev-chapter') {
-      const thresholdIndex = chapters.reduce(
-        (pr, cu) => (cu.realindex > pr && cu.realindex < myChapter.realindex ? cu.realindex : pr),
-        -1
-      )
-
-      markChapter(token, series, chapterPath, false, new Date())
-
-      if (thresholdIndex === -1) {
-        return redirect(`/manga/${series}`)
-      } else {
-        return redirect(`/manga/${series}/chapter/${chapters.filter(ch => ch.realindex === thresholdIndex)[0].path}`)
-      }
+    if (targetChapter === null) {
+      return redirect(`/manga/${series}`)
     } else {
-      const thresholdIndex = chapters.reduce(
-        (pr, cu) => (cu.realindex < pr && cu.realindex > myChapter.realindex ? cu.realindex : pr),
-        Number.MAX_SAFE_INTEGER
-      )
-
-      markChapter(token, series, chapterPath, true, new Date())
-
-      if (thresholdIndex === Number.MAX_SAFE_INTEGER) {
-        return redirect(`/manga/${series}`)
-      } else {
-        return redirect(`/manga/${series}/chapter/${chapters.filter(ch => ch.realindex === thresholdIndex)[0].path}`)
-      }
+      return redirect(`/manga/${series}/chapter/${targetChapter.path}`)
     }
   })
 }
@@ -56,10 +34,13 @@ export async function loader({ request, params: { series, chapterPath } }) {
 export default function Index() {
   const { images, details, chapter } = useLoaderData()
 
+  const scrollUp = () => window.scrollTo(0, 0)
+
   return (
     <div style={{ fontFamily: 'system-ui, sans-serif', lineHeight: '1.4' }}>
       <h1>{details.meta.name}</h1>
       <h2>{chapter.meta.name}</h2>
+      <Link to={`/manga/${details.request.slug}`}>Back to manga listing</Link>
       <hr />
       {images.map((imgSrc, index) => (
         <>
@@ -70,12 +51,12 @@ export default function Index() {
       <hr />
       <Form method='POST'>
         <input type='hidden' name='action' value='prev-chapter' />
-        <input type='submit' value='< Previous Chapter' />
+        <input type='submit' value='< Previous Chapter' onClick={scrollUp} />
       </Form>
       <Link to={`/manga/${details.request.slug}`}>Back to {details.meta.name}</Link>
       <Form method='POST'>
         <input type='hidden' name='action' value='next-chapter' />
-        <input type='submit' value='> Next Chapter' />
+        <input type='submit' value='> Next Chapter' onClick={scrollUp} />
       </Form>
     </div>
   )

@@ -56,7 +56,6 @@ export async function authorize(request, callback) {
     if (!user || !token) throw new Error('Unauthorized')
 
     try {
-      console.log('token', token)
       return await callback({ token })
     } catch (e) {
       throw { __passthrough: true, error: e }
