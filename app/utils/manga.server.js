@@ -44,6 +44,13 @@ export function getImage(token, manga, chapter, image) {
   }).then(response => response.body)
 }
 
+export function getThumbnailImage(token, manga) {
+  return fetch(`${rootPath}/${manga}/Thumbnail.jpg:/content`, {
+    method: 'GET',
+    headers: new Headers([['Authorization', `Bearer ${token}`]])
+  }).then(response => response.body)
+}
+
 export async function hideChapter(token, manga, chapterPath) {
   const details = await getMangaDetail(token, manga)
   let newChapters = []

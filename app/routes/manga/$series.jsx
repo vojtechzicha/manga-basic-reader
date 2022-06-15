@@ -56,24 +56,35 @@ export default function MangaSeries() {
   return (
     <div style={{ fontFamily: 'system-ui, sans-serif', lineHeight: '1.4' }}>
       <h1>{data.meta.name}</h1>
-      <ul>
-        <li>
-          <strong>Status: </strong>
-          {data.meta.status}
-        </li>
-        <li>
-          <strong>Author: </strong>
-          {data.meta.author}
-        </li>
-        <li>
-          <strong>Genres: </strong>
-          {data.meta.genres.join(', ')}
-        </li>
-        <li>
-          <strong>Alternative title: </strong>
-          {data.meta.alternativeTitle}
-        </li>
-      </ul>
+      <table>
+        <tbody>
+          <tr>
+            <td>
+              <img src={`/manga/image/${data.request.slug}`} alt='Manga thumbnail' />
+            </td>
+            <td>
+              <ul>
+                <li>
+                  <strong>Status: </strong>
+                  {data.meta.status}
+                </li>
+                <li>
+                  <strong>Author: </strong>
+                  {data.meta.author}
+                </li>
+                <li>
+                  <strong>Genres: </strong>
+                  {data.meta.genres.join(', ')}
+                </li>
+                <li>
+                  <strong>Alternative title: </strong>
+                  {data.meta.alternativeTitle}
+                </li>
+              </ul>
+            </td>
+          </tr>
+        </tbody>
+      </table>
       <p>{data.meta.summary}</p>
       <p>
         <Link to='/'>Back to Manga Listing</Link>
