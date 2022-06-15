@@ -37,7 +37,7 @@ export async function getMangaSeriesByGenre() {
   const readMangalist = (
     await chaptersCollection
       .aggregate([
-        { $match: { read: true } },
+        { $match: { read: true, hidden: false } },
         {
           $group: {
             _id: { mangaPath: '$mangaPath' }
@@ -67,6 +67,7 @@ export async function getMangaSeriesByGenre() {
 export async function getMangaSeriesOnDeck() {
   const mangaList = await chaptersCollection
     .aggregate([
+      { $match: { hidden: false } },
       {
         $group: {
           _id: { mangaPath: '$mangaPath', read: '$read' },
@@ -106,6 +107,7 @@ export async function getNewlyUpdatedSeries() {
 
   const mangaList = await chaptersCollection
     .aggregate([
+      { $match: { hidden: false } },
       {
         $group: {
           _id: { mangaPath: '$mangaPath' },
@@ -210,7 +212,8 @@ export async function moveChapter(mangaPath, chapterId, shouldMoveUp) {
 }
 
 export async function getNextUnreadChapter(mangaPath) {
-  const allChapters = await chaptersCollection.find({ mangaPath }).toArray(),
+  console.log({ mangaPath })
+  const allChapters = await chaptersCollection.find({ mangaPath }, { skipSessions: true }).toArray(),
     chapters = allChapters.filter(ch => !ch.hidden).map(ch => ({ ...ch, realIndex: ch.newIndex ?? ch.index }))
 
   if (chapters.length === 0) return allChapters[0].chapterPath
