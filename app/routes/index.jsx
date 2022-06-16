@@ -5,7 +5,8 @@ import {
   getAllMangaSeries,
   getMangaSeriesByGenre,
   getMangaSeriesOnDeck,
-  getNewlyUpdatedSeries
+  getNewlyUpdatedSeries,
+  getReadAgainSeries
 } from '../utils/manga.server'
 import { MangaViewTable, MangaTable } from '../components/mangaView'
 
@@ -15,7 +16,8 @@ export async function loader({ request }) {
       all: await getAllMangaSeries(),
       byGenre: await getMangaSeriesByGenre(),
       onDeck: await getMangaSeriesOnDeck(),
-      lastUpdated: await getNewlyUpdatedSeries()
+      lastUpdated: await getNewlyUpdatedSeries(),
+      readAgain: await getReadAgainSeries()
     }
   })
 }
@@ -60,6 +62,7 @@ export default function Index() {
         useBlue={true}
         maxRows={1}
       />
+      <MangaViewTable id='read-again' mangas={data.readAgain} heading='Read again' useBlue={true} maxRows={2} />
       <MangaTable id='all' mangas={data.all} heading='All Series' />
     </>
   )

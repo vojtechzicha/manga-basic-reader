@@ -114,6 +114,42 @@ export async function getRelatedMangasByAuthor(mangaPath) {
   return ret
 }
 
+export async function getReadAgainSeries() {
+  const mangaList = await chaptersCollection
+    .aggregate([
+      { $match: { hidden: false } },
+      {
+        $group: {
+          _id: { mangaPath: '$mangaPath', read: '$read' },
+          count: { $count: {} },
+          newestRead: { $max: '$readAt' }
+        }
+      }
+    ])
+    .toArray()
+  const filteredList = [...new Set(mangaList.map(group => group._id.mangaPath))]
+    .map(mangaPath => ({
+      mangaPath,
+      readCount: mangaList.find(g => g._id.mangaPath === mangaPath && g._id.read)?.count ?? null,
+      unreadCount: mangaList.find(g => g._id.mangaPath === mangaPath && !g._id.read)?.count ?? null,
+      newestRead: mangaList.find(g => g._id.mangaPath === mangaPath && g._id.read)?.newestRead ?? null
+    }))
+    .filter(manga => manga.readCount !== null && manga.unreadCount === null)
+  filteredList.sort((a, b) => a.newestRead - b.newestRead)
+
+  const mangasList = await mangasCollection
+    .find(
+      { 'request.slug': { $in: filteredList.map(i => i.mangaPath) } },
+      {
+        sort: { 'meta.name': 1 },
+        projection: { 'meta.name': 1, 'request.slug': 1, thumbnail: 1 }
+      }
+    )
+    .toArray()
+
+  return filteredList.map(fli => mangasList.find(mli => mli.request.slug === fli.mangaPath))
+}
+
 export async function getMangaSeriesOnDeck() {
   const mangaList = await chaptersCollection
     .aggregate([
