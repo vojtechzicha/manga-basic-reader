@@ -20,7 +20,7 @@ export async function getAllMangaSeries() {
       {},
       {
         sort: { 'meta.name': 1 },
-        projection: { 'meta.name': 1, 'request.slug': 1, thumbnail: 1 }
+        projection: { 'meta.name': 1, 'request.slug': 1, thumbnail: 1, rating: 1 }
       }
     )
     .toArray()
@@ -88,7 +88,7 @@ export async function getRelatedMangasByGenre(mangaPath) {
     ret[genre] = await mangasCollection
       .find(
         { 'meta.genres': genre, 'request.slug': { $ne: mangaPath } },
-        { projection: { 'request.slug': 1, 'meta.name': 1, thumbnail: 1 } }
+        { projection: { 'request.slug': 1, 'meta.name': 1, thumbnail: 1, rating: 1 } }
       )
       .toArray()
     shuffleArray(ret[genre])
@@ -107,7 +107,7 @@ export async function getRelatedMangasByAuthor(mangaPath) {
   let ret = await mangasCollection
     .find(
       { 'meta.author': author, 'request.slug': { $ne: mangaPath } },
-      { projection: { 'request.slug': 1, 'meta.name': 1, thumbnail: 1 } }
+      { projection: { 'request.slug': 1, 'meta.name': 1, thumbnail: 1, rating: 1 } }
     )
     .toArray()
   shuffleArray(ret)
@@ -142,7 +142,7 @@ export async function getReadAgainSeries() {
       { 'request.slug': { $in: filteredList.map(i => i.mangaPath) } },
       {
         sort: { 'meta.name': 1 },
-        projection: { 'meta.name': 1, 'request.slug': 1, thumbnail: 1 }
+        projection: { 'meta.name': 1, 'request.slug': 1, thumbnail: 1, rating: 1 }
       }
     )
     .toArray()
@@ -181,7 +181,7 @@ export async function getMangaSeriesOnDeck() {
       { 'request.slug': { $in: filteredList.map(i => i.mangaPath) } },
       {
         sort: { 'meta.name': 1 },
-        projection: { 'meta.name': 1, 'request.slug': 1, thumbnail: 1 }
+        projection: { 'meta.name': 1, 'request.slug': 1, thumbnail: 1, rating: 1 }
       }
     )
     .toArray()
@@ -215,7 +215,7 @@ export async function getNewlyUpdatedSeries() {
       { 'request.slug': { $in: mangaList.map(i => i._id.mangaPath) } },
       {
         sort: { 'meta.name': 1 },
-        projection: { 'meta.name': 1, 'request.slug': 1, thumbnail: 1 }
+        projection: { 'meta.name': 1, 'request.slug': 1, thumbnail: 1, rating: 1 }
       }
     )
     .toArray()
@@ -270,6 +270,10 @@ export async function markChapter(chapterId, asRead, readDate = null) {
 
 export async function showAllChapters(mangaPath) {
   await chaptersCollection.updateMany({ mangaPath }, { $set: { hidden: false, newIndex: null } })
+}
+
+export async function rateSeries(mangaId, rating = 0) {
+  await mangasCollection.updateOne({ _id: ObjectId(mangaId) }, { $set: { rating } })
 }
 
 export async function markAllChapters(mangaPath, asRead, readDate = null) {

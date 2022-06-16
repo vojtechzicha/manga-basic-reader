@@ -41,7 +41,16 @@ export function MangaTable({ id, mangas, heading }) {
             </div>
           </div>
           <table className='w-full text-sm text-left text-gray-500 dark:text-gray-400'>
-            <thead />
+            <thead class='text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400'>
+              <tr>
+                <th scope='col' class='px-6 py-3'>
+                  Series name
+                </th>
+                <th scope='col' class='px-6 py-3'>
+                  Rating
+                </th>
+              </tr>
+            </thead>
             <tbody>
               {mangas
                 .filter(
@@ -54,11 +63,26 @@ export function MangaTable({ id, mangas, heading }) {
                   <tr
                     key={manga._id.toString()}
                     className='bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600'>
-                    <th
-                      scope='row'
-                      className='px-6 py-4 font-medium italic text-gray-500 dark:text-white whitespace-nowrap'>
+                    <th scope='row' className='px-6 py-4 font-large text-gray-500 dark:text-white whitespace-nowrap'>
                       <Link to={`/manga/${manga.request.slug}`}>{manga.meta.name}</Link>
                     </th>
+                    <td>
+                      {(manga.rating ?? 0) > 0 ? (
+                        <div className='rating rating-sm rating-half'>
+                          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(i => (
+                            <input
+                              key={i}
+                              type='radio'
+                              name='rating-10'
+                              className={`bg-green-500 mask mask-star-2 mask-half-${i % 2 === 1 ? 1 : 2}`}
+                              checked={(manga.rating ?? 0) === i}
+                            />
+                          ))}
+                        </div>
+                      ) : (
+                        <em>not rated</em>
+                      )}
+                    </td>
                   </tr>
                 ))}
             </tbody>
@@ -70,6 +94,7 @@ export function MangaTable({ id, mangas, heading }) {
 }
 
 function MangaViewCell({ manga }) {
+  const rating = manga.rating ?? 0
   return (
     <div className='max-w-sm sm:w-1/2 md:w-1/4 lg:w-1/6'>
       <div className='team-item'>
@@ -92,7 +117,20 @@ function MangaViewCell({ manga }) {
             )}
           </Link>
         </div>
-        <div className='text-center px-5 py-3 dark:bg-slate-600'>
+        <div className='text-center px-5 py-3 dark:bg-slate-500'>
+          {rating > 0 ? (
+            <div className='rating rating-sm rating-half'>
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(i => (
+                <input
+                  key={i}
+                  type='radio'
+                  name='rating-10'
+                  className={`bg-green-500 mask mask-star-2 mask-half-${i % 2 === 1 ? 1 : 2}`}
+                  checked={rating === i}
+                />
+              ))}
+            </div>
+          ) : null}
           <h3 className='team-name dark:text-gray-100'>
             <Link to={`/manga/${manga.request.slug}`}>{manga.meta.name}</Link>
           </h3>

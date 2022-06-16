@@ -1,5 +1,5 @@
 import { redirect } from '@remix-run/node'
-import { Link, useLoaderData, Form } from '@remix-run/react'
+import { Link, useLoaderData, Form, useSubmit } from '@remix-run/react'
 import { authorize } from '../../onedrive.server'
 import { useEffect, useState } from 'react'
 
@@ -10,6 +10,7 @@ import {
   moveChapter,
   markChapter,
   markAllChapters,
+  rateSeries,
   getRelatedMangasByGenre,
   getRelatedMangasByAuthor
 } from '../../utils/manga.server'
@@ -25,6 +26,9 @@ export async function action({ request, params: { series } }) {
       return redirect(`/manga/${series}`)
     } else if (action === 'show-all') {
       await showAllChapters(series)
+      return redirect(`/manga/${series}`)
+    } else if (action === 'rate') {
+      await rateSeries(formData.get('mangaId'), Number.parseInt(formData.get('rating-10'), 10))
       return redirect(`/manga/${series}`)
     }
 
@@ -106,6 +110,10 @@ export default function MangaSeries() {
 }
 
 function Header({ details, chapters }) {
+  const rating = details.rating ?? 0
+  const allUnread = chapters.filter(ch => !ch.hidden && !ch.read).length === 0
+  const submit = useSubmit()
+
   return (
     <div id='feature' className='bg-blue-100 dark:bg-slate-800 pt-24 pb-5'>
       <div className='container'>
@@ -124,6 +132,34 @@ function Header({ details, chapters }) {
             <div className='mb-5 lg:mb-0'>
               <div className='flex flex-wrap'>
                 <div>
+                  {allUnread ? (
+                    <Form
+                      method='POST'
+                      className='rating rating-lg rating-half mb-6'
+                      onChange={e => {
+                        submit(e.currentTarget, { replace: true })
+                      }}>
+                      <input type='hidden' name='action' value='rate' />
+                      <input type='hidden' name='mangaId' value={details._id.toString()} />
+                      <input
+                        type='radio'
+                        name='rating-10'
+                        value={0}
+                        className='rating-hidden'
+                        defaultChecked={rating === 0}
+                      />
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(i => (
+                        <input
+                          key={i}
+                          type='radio'
+                          name='rating-10'
+                          value={i}
+                          defaultChecked={rating === i}
+                          className={`bg-green-500 mask mask-star-2 mask-half-${i % 2 === 1 ? 1 : 2}`}
+                        />
+                      ))}
+                    </Form>
+                  ) : null}
                   <div className='flex flex-wrap items-center'>
                     <p className='pl-3 dark:text-gray-100'>
                       <strong>Status: </strong>

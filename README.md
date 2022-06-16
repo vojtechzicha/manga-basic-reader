@@ -4,13 +4,20 @@
 
 ## OneDrive Authorization
 
-- Name: `Basic Manga Reader`
-- Application (client) ID: `76df37c8-219b-4dad-b7ff-671578eaf820`
-- Object ID: `649f9be5-948c-483a-b4b0-5384bea019bf`
-- Directory (tenant) ID: `debf8d83-3e33-48f2-ae95-ee3173a6684a`
-- Client Secret Description: `basic-manga-reader-server`
-- Client Secret ID: `8f4be5d0-a39d-4430-847a-0eaf1fce7fe0`
-- Client Secret Value: `2RX8Q~m26.uAgiKJuGCydj9dITY6zShlbxnBtbH6`
+````
+
+1ONEDRIVE_CLIENT_ID=76df37c8-219b-4dad-b7ff-671578eaf820
+ONEDRIVE_CLIENT_SECRET=62F8Q~XAg-7tQy1Jk~wvip3QMLMbJkAfBGB6Gcyh
+ONEDRIVE_AUTHORIZE_URL="https://login.live.com/oauth20_authorize.srf"
+ONEDRIVE_TOKEN_URL="https://login.live.com/oauth20_token.srf"
+ONEDRIVE_CALLBACK_URL="http://localhost:3000/callback"
+
+SESSION_SECRET=a4htuqw34ghpt58q2340-tv56
+
+MONGO_URL="mongodb+srv://mangaUser:MQCeCkGuaguCF2IB@manga-reader-database.2uohq.mongodb.net/?retryWrites=true&w=majority"
+MONGO_DB="manga-reader-database"```
+
+- `mongodump --uri mongodb+srv://mangaUser:MQCeCkGuaguCF2IB@manga-reader-database.2uohq.mongodb.net/manga-reader-database`
 
 ## Development
 
@@ -18,7 +25,7 @@ From your terminal:
 
 ```sh
 npm run dev
-```
+````
 
 This starts your app in development mode, rebuilding assets on file changes.
 
