@@ -100,7 +100,7 @@ export async function getMangaSeriesOnDeck() {
     .filter(group => group !== null)
   filteredList.sort((a, b) => b.date - a.date)
 
-  return await mangasCollection
+  const mangasList = await mangasCollection
     .find(
       { 'request.slug': { $in: filteredList.map(i => i.mangaPath) } },
       {
@@ -109,6 +109,11 @@ export async function getMangaSeriesOnDeck() {
       }
     )
     .toArray()
+
+  return filteredList.map(fli => ({
+    ...mangasList.find(mli => mli.request.slug === fli.mangaPath),
+    newestRead: new Date(fli.date)
+  }))
 }
 
 export async function getNewlyUpdatedSeries() {

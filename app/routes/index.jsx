@@ -1,5 +1,5 @@
-import { Link, useLoaderData } from '@remix-run/react'
-import { Fragment, useState, useEffect } from 'react'
+import { Link, useLoaderData, Form } from '@remix-run/react'
+import { useState, useEffect } from 'react'
 import { authorize } from '../onedrive.server'
 
 import {
@@ -53,24 +53,18 @@ function MangaViewCell({ manga }) {
   )
 }
 
-function MangaViewTable({
-  id,
-  mangas,
-  heading,
-  showAllText = 'Show All',
-  useBlue = false,
-  lowerLevel = false,
-  maxRows = 2
-}) {
+function MangaViewTable({ id, mangas, heading, useBlue = false, lowerLevel = false, maxRows = 2 }) {
   const [showAll, setShowAll] = useState(true)
 
   useEffect(() => {
-    const grid = Array.from(document.querySelector(`#${id}`)?.children)
-    const breakIndex = grid.findIndex(item => item.offsetTop > grid[0].offsetTop)
-    const numPerRow = breakIndex === -1 ? grid.length : breakIndex
+    if (mangas.length > 0) {
+      const grid = Array.from(document.querySelector(`#${id}`)?.children)
+      const breakIndex = grid.findIndex(item => item.offsetTop > grid[0].offsetTop)
+      const numPerRow = breakIndex === -1 ? grid.length : breakIndex
 
-    if (mangas.length > numPerRow * maxRows) {
-      setShowAll(numPerRow * maxRows)
+      if (mangas.length > numPerRow * maxRows) {
+        setShowAll(numPerRow * maxRows)
+      }
     }
   }, [id, mangas.length, maxRows])
 
@@ -109,12 +103,27 @@ function MangaViewTable({
   ) : null
 }
 
+function isWithin30Days(date) {
+  const testDate = new Date()
+  testDate.setDate(testDate.getDate() - 30)
+
+  const diff = Math.abs(new Date(date).getTime() - testDate.getTime())
+  return diff / (1000 * 60 * 60 * 24)
+}
+
 export default function Index() {
   const data = useLoaderData()
+  console.log(data.onDeck.filter(series => !isWithin30Days(series.newestRead)))
 
   return (
     <>
-      <MangaViewTable id='on-deck' mangas={data.onDeck} heading='On Deck' useBlue={true} maxRows={2} />
+      <MangaViewTable
+        id='on-deck'
+        mangas={data.onDeck.filter(series => isWithin30Days(series.newestRead))}
+        heading='On Deck'
+        useBlue={true}
+        maxRows={2}
+      />
       <MangaViewTable id='last-updated' mangas={data.lastUpdated} heading='Last Updated Series' maxRows={1} />
       {Object.keys(data.byGenre)
         .sort()
@@ -130,7 +139,82 @@ export default function Index() {
             maxRows={1}
           />
         ))}
-      <MangaViewTable id='all' mangas={data.all} heading='All Series' maxRows={2} />
+      <MangaViewTable
+        id='continue-reading'
+        mangas={data.onDeck.filter(series => !isWithin30Days(series.newestRead))}
+        heading='Continue Reading'
+        useBlue={true}
+        maxRows={1}
+      />
+      <MangaTable id='all' mangas={data.all} heading='All Series' />
     </>
+  )
+}
+
+function MangaTable({ id, mangas, heading }) {
+  const [searchText, setSearchText] = useState('')
+
+  return (
+    <section id={id} className='text-center py-20'>
+      <div className='container text-left'>
+        <h4 className='mb-3 section-heading wow fadeInUp' data-wow-delay='0.3s' id={`heading-${id}`}>
+          {heading}
+        </h4>
+        <div className='relative overflow-x-auto shadow-md sm:rounded-lg'>
+          <div className='flex flex-wrap items-center'>
+            <div className='p-4'>
+              <label for='table-search' className='sr-only'>
+                Search
+              </label>
+              <div className='relative mt-1'>
+                <div className='absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none'>
+                  <svg
+                    className='w-5 h-5 text-gray-500 dark:text-gray-400'
+                    fill='currentColor'
+                    viewBox='0 0 20 20'
+                    xmlns='http://www.w3.org/2000/svg'>
+                    <path
+                      fill-rule='evenodd'
+                      d='M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z'
+                      clip-rule='evenodd'></path>
+                  </svg>
+                </div>
+                <input
+                  type='text'
+                  id='table-search'
+                  className='bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-80 pl-10 p-2.5  dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500'
+                  placeholder='Search for items'
+                  value={searchText}
+                  onChange={e => setSearchText(e.currentTarget.value)}
+                />
+              </div>
+            </div>
+          </div>
+          <table className='w-full text-sm text-left text-gray-500 dark:text-gray-400'>
+            <thead />
+            <tbody>
+              {mangas
+                .filter(
+                  manga =>
+                    searchText === '' ||
+                    manga.meta.name.toLowerCase().includes(searchText.toLowerCase()) ||
+                    manga.request.slug.includes(searchText.toLowerCase())
+                )
+                .map(manga => (
+                  <tr
+                    key={manga._id.toString()}
+                    className='bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600'>
+                    <th
+                      scope='row'
+                      className='px-6 py-4 font-medium italic text-gray-500 dark:text-white whitespace-nowrap'>
+                      <Link to={`manga/${manga.request.slug}`}>{manga.meta.name}</Link>
+                    </th>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
   )
 }

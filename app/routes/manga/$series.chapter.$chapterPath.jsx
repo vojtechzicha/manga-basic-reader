@@ -42,9 +42,9 @@ export default function Index() {
 
   return (
     <>
-      <div id='feature' className='bg-blue-100 pt-24 pb-5 fixed top-0 left-0 w-full'>
+      <div className='bg-blue-100 pt-24 pb-5 fixed top-0 left-0 w-full'>
         <div className='container'>
-          <h2 className='mb-12 section-heading wow fadeInDown' data-wow-delay='0.3s'>
+          <h2 className='mb-4 section-heading wow fadeInDown' data-wow-delay='0.3s'>
             <Link to={`/manga/${details.request.slug}`} className='text-gray-500'>
               {details.meta.name}
             </Link>{' '}
@@ -52,10 +52,10 @@ export default function Index() {
           </h2>
         </div>
       </div>
-      <section id='hero-area' class='pt-4 pb-4'>
-        <div class='container'>
-          <div class='flex justify-between'>
-            <div class='w-full text-center'>
+      <section className='pt-10 pb-4'>
+        <div className='container '>
+          <div className='flex justify-center'>
+            <div className='w-full text-center' style={{ marginTop: '17rem' }}>
               {images.map((imgSrc, index) => (
                 <>
                   <img key={index} src={imgSrc} alt='Manga chapter' />
@@ -88,7 +88,6 @@ export default function Index() {
           </div>
         </div>
       </div>
-      <div></div>
     </>
   )
 }
