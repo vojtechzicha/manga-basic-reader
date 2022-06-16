@@ -62,7 +62,6 @@ export async function getMangaSeriesByGenre() {
     genreKeys = Object.keys(genres),
     i = 0
   shuffleArray(genreKeys)
-  console.log(genreKeys)
 
   for (let genre of genreKeys) {
     ret[genre] = genres[genre]
@@ -71,6 +70,45 @@ export async function getMangaSeriesByGenre() {
     i += 1
     if (i > 7) break
   }
+  return ret
+}
+
+export async function getRelatedMangasByGenre(mangaPath) {
+  const genres = (
+    await mangasCollection.findOne({ 'request.slug': mangaPath }, { projection: { 'meta.genres': 1, _id: 0 } })
+  ).meta.genres
+
+  let ret = {},
+    i = 0
+  shuffleArray(genres)
+
+  for (let genre of genres) {
+    ret[genre] = await mangasCollection
+      .find(
+        { 'meta.genres': genre, 'request.slug': { $ne: mangaPath } },
+        { projection: { 'request.slug': 1, 'meta.name': 1, thumbnail: 1 } }
+      )
+      .toArray()
+    shuffleArray(ret[genre])
+
+    i += 1
+    if (i > 7) break
+  }
+  return ret
+}
+
+export async function getRelatedMangasByAuthor(mangaPath) {
+  const author = (
+    await mangasCollection.findOne({ 'request.slug': mangaPath }, { projection: { 'meta.author': 1, _id: 0 } })
+  ).meta.author
+
+  let ret = await mangasCollection
+    .find(
+      { 'meta.author': author, 'request.slug': { $ne: mangaPath } },
+      { projection: { 'request.slug': 1, 'meta.name': 1, thumbnail: 1 } }
+    )
+    .toArray()
+  shuffleArray(ret)
   return ret
 }
 
