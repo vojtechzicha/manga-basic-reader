@@ -149,6 +149,22 @@ function Header({ details, chapters }) {
                       {details.meta.alternativeTitle}
                     </p>
                   </div>
+                  <div className='flex flex-wrap mb-6 items-center'>
+                    <p className='pl-3'>
+                      <strong>Source: </strong>
+                      <a href={details.request.url} target='_blank' rel='noreferrer'>
+                        see on mangago.me ⧉
+                      </a>
+                    </p>
+                  </div>
+                  {details.meta.additionalData?.application ? (
+                    <div className='flex flex-wrap mb-6 items-center'>
+                      <p className='pl-3'>
+                        <strong>Alternative source: </strong>
+                        read on {details.meta.additionalData.application} mobile app
+                      </p>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </div>

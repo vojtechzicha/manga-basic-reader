@@ -42,20 +42,17 @@ export default function Index() {
         maxRows={2}
       />
       <MangaViewTable id='last-updated' mangas={data.lastUpdated} heading='Last Updated Series' maxRows={1} />
-      {Object.keys(data.byGenre)
-        .sort()
-        .filter(genre => data.byGenre[genre].length > 1)
-        .map((genre, i) => (
-          <MangaViewTable
-            id={`genre-${i}`}
-            key={genre}
-            mangas={data.byGenre[genre]}
-            heading={`Discover ${genre}`}
-            lowerLevel={true}
-            useBlue={i % 2 === 0}
-            maxRows={1}
-          />
-        ))}
+      {Object.keys(data.byGenre).map((genre, i) => (
+        <MangaViewTable
+          id={`genre-${i}`}
+          key={genre}
+          mangas={data.byGenre[genre]}
+          heading={`Discover ${genre}`}
+          lowerLevel={true}
+          useBlue={i % 2 === 0}
+          maxRows={1}
+        />
+      ))}
       <MangaViewTable
         id='continue-reading'
         mangas={data.onDeck.filter(series => !isWithin30Days(series.newestRead))}

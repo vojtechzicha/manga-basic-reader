@@ -64,6 +64,8 @@ export async function getMangaSeriesByGenre() {
   shuffleArray(genreKeys)
 
   for (let genre of genreKeys) {
+    if (genres[genre].length < 2) continue
+
     ret[genre] = genres[genre]
     shuffleArray(ret[genre])
 
