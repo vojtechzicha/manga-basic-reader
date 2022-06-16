@@ -10,7 +10,6 @@ import {
   moveChapter,
   markChapter,
   markAllChapters,
-  getNextUnreadChapter,
   getRelatedMangasByGenre,
   getRelatedMangasByAuthor
 } from '../../utils/manga.server'
@@ -21,9 +20,7 @@ export async function action({ request, params: { series } }) {
     const formData = await request.formData(),
       action = formData.get('action')
 
-    if (action === 'start-reading') {
-      return redirect(`/manga/${series}/chapter/${await getNextUnreadChapter(series)}`)
-    } else if (action === 'mark-all') {
+    if (action === 'mark-all') {
       await markAllChapters(series, formData.get('mark-as') === 'read')
       return redirect(`/manga/${series}`)
     } else if (action === 'show-all') {
@@ -118,38 +115,40 @@ function Header({ details, chapters }) {
         <div className='flex flex-wrap items-center'>
           <div className='w-full lg:w-1/4'>
             <div className='mx-3 lg:mr-0 lg:ml-3 wow fadeInRight' data-wow-delay='0.3s'>
-              <img src={`image/${details.request.slug}`} alt='' />
+              <Link to={`read`}>
+                <img src={`image/${details.request.slug}`} alt='Manga Thumbnail' />
+              </Link>
             </div>
           </div>
           <div className='w-full lg:w-3/4'>
             <div className='mb-5 lg:mb-0'>
               <div className='flex flex-wrap'>
                 <div>
-                  <div className='flex flex-wrap mb-6 items-center'>
+                  <div className='flex flex-wrap items-center'>
                     <p className='pl-3'>
                       <strong>Status: </strong>
                       {details.meta.status}
                     </p>
                   </div>
-                  <div className='flex flex-wrap mb-6 items-center'>
+                  <div className='flex flex-wrap items-center'>
                     <p className='pl-3'>
                       <strong>Author: </strong>
                       {details.meta.author}
                     </p>
                   </div>
-                  <div className='flex flex-wrap mb-6 items-center'>
+                  <div className='flex flex-wrap items-center'>
                     <p className='pl-3'>
                       <strong>Genres: </strong>
                       {details.meta.genres.join(', ')}
                     </p>
                   </div>
-                  <div className='flex flex-wrap mb-6 items-center'>
+                  <div className='flex flex-wrap items-center'>
                     <p className='pl-3'>
                       <strong>Alternative title: </strong>
                       {details.meta.alternativeTitle}
                     </p>
                   </div>
-                  <div className='flex flex-wrap mb-6 items-center'>
+                  <div className='flex flex-wrap items-center'>
                     <p className='pl-3'>
                       <strong>Source: </strong>
                       <a href={details.request.url} target='_blank' rel='noreferrer'>
@@ -158,32 +157,21 @@ function Header({ details, chapters }) {
                     </p>
                   </div>
                   {details.meta.additionalData?.application ? (
-                    <div className='flex flex-wrap mb-6 items-center'>
+                    <div className='flex flex-wrap items-center'>
                       <p className='pl-3'>
                         <strong>Alternative source: </strong>
                         read on {details.meta.additionalData.application} mobile app
                       </p>
                     </div>
                   ) : null}
+                  <div className='flex flex-wrap mt-6 items-center'>
+                    <p className='pl-3'>{details.meta.summary}</p>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-          <div className='justify-center w-full mt-10'>
-            <Form method='POST' className='text-center mb-10 wow fadeInUp' data-wow-delay='1.2s'>
-              <input type='hidden' name='action' value='start-reading' />
-              <input
-                type='submit'
-                className='btn'
-                value={
-                  chapters.filter(ch => ch.read !== false).length > 0 &&
-                  chapters.filter(ch => ch.read === false).length > 0
-                    ? 'Continue reading'
-                    : 'Start reading'
-                }
-              />
-            </Form>
-          </div>
+          <div className='justify-center w-full mt-10'></div>
         </div>
       </div>
     </div>
