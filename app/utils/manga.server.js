@@ -58,10 +58,20 @@ export async function getMangaSeriesByGenre() {
     .reduce((pr, manga) => [...pr, ...manga.meta.genres.map(genre => [genre, manga])], [])
     .reduce((pr, cu) => ({ ...pr, [cu[0]]: [...(pr[cu[0]] === undefined ? [] : pr[cu[0]]), cu[1]] }), {})
 
-  for (let genre of Object.keys(genres)) {
-    shuffleArray(genres[genre])
+  let ret = {},
+    genreKeys = Object.keys(genres),
+    i = 0
+  shuffleArray(genreKeys)
+  console.log(genreKeys)
+
+  for (let genre of genreKeys) {
+    ret[genre] = genres[genre]
+    shuffleArray(ret[genre])
+
+    i += 1
+    if (i > 7) break
   }
-  return genres
+  return ret
 }
 
 export async function getMangaSeriesOnDeck() {
