@@ -73,7 +73,7 @@ export default function MangaSeries() {
   return (
     <>
       <Header details={details} chapters={chapters} />
-      <section id='Subscribes' className='text-center py-20'>
+      <section id='Subscribes' className='text-center py-20 dark:bg-slate-600'>
         <div className='container text-left'>
           <h4 className='mb-10 section-heading wow fadeInUp' data-wow-delay='0.3s'>
             Chapters
@@ -107,7 +107,7 @@ export default function MangaSeries() {
 
 function Header({ details, chapters }) {
   return (
-    <div id='feature' className='bg-blue-100 pt-24 pb-5'>
+    <div id='feature' className='bg-blue-100 dark:bg-slate-800 pt-24 pb-5'>
       <div className='container'>
         <h2 className='mb-12 section-heading wow fadeInDown' data-wow-delay='0.3s'>
           {details.meta.name}
@@ -125,31 +125,31 @@ function Header({ details, chapters }) {
               <div className='flex flex-wrap'>
                 <div>
                   <div className='flex flex-wrap items-center'>
-                    <p className='pl-3'>
+                    <p className='pl-3 dark:text-gray-100'>
                       <strong>Status: </strong>
                       {details.meta.status}
                     </p>
                   </div>
                   <div className='flex flex-wrap items-center'>
-                    <p className='pl-3'>
+                    <p className='pl-3 dark:text-gray-100'>
                       <strong>Author: </strong>
                       {details.meta.author}
                     </p>
                   </div>
                   <div className='flex flex-wrap items-center'>
-                    <p className='pl-3'>
+                    <p className='pl-3 dark:text-gray-100'>
                       <strong>Genres: </strong>
                       {details.meta.genres.join(', ')}
                     </p>
                   </div>
                   <div className='flex flex-wrap items-center'>
-                    <p className='pl-3'>
+                    <p className='pl-3 dark:text-gray-100'>
                       <strong>Alternative title: </strong>
                       {details.meta.alternativeTitle}
                     </p>
                   </div>
                   <div className='flex flex-wrap items-center'>
-                    <p className='pl-3'>
+                    <p className='pl-3 dark:text-gray-100'>
                       <strong>Source: </strong>
                       <a href={details.request.url} target='_blank' rel='noreferrer'>
                         see on mangago.me ⧉
@@ -158,20 +158,19 @@ function Header({ details, chapters }) {
                   </div>
                   {details.meta.additionalData?.application ? (
                     <div className='flex flex-wrap items-center'>
-                      <p className='pl-3'>
+                      <p className='pl-3 dark:text-gray-100'>
                         <strong>Alternative source: </strong>
                         read on {details.meta.additionalData.application} mobile app
                       </p>
                     </div>
                   ) : null}
                   <div className='flex flex-wrap mt-6 items-center'>
-                    <p className='pl-3'>{details.meta.summary}</p>
+                    <p className='pl-3 dark:text-gray-100'>{details.meta.summary}</p>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-          <div className='justify-center w-full mt-10'></div>
         </div>
       </div>
     </div>

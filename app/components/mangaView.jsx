@@ -5,7 +5,7 @@ export function MangaTable({ id, mangas, heading }) {
   const [searchText, setSearchText] = useState('')
 
   return (
-    <section id={id} className='text-center py-20'>
+    <section id={id} className='text-center py-20 dark:bg-slate-600'>
       <div className='container text-left'>
         <h4 className='mb-3 section-heading wow fadeInUp' data-wow-delay='0.3s' id={`heading-${id}`}>
           {heading}
@@ -92,8 +92,8 @@ function MangaViewCell({ manga }) {
             )}
           </Link>
         </div>
-        <div className='text-center px-5 py-3'>
-          <h3 className='team-name'>
+        <div className='text-center px-5 py-3 dark:bg-slate-600'>
+          <h3 className='team-name dark:text-gray-100'>
             <Link to={`/manga/${manga.request.slug}`}>{manga.meta.name}</Link>
           </h3>
         </div>
@@ -118,7 +118,9 @@ export function MangaViewTable({ id, mangas, heading, useBlue = false, lowerLeve
   }, [id, mangas.length, maxRows])
 
   return mangas.length > 0 ? (
-    <section id='team' className={`py-24 text-center ${useBlue ? 'bg-blue-100' : ''}`}>
+    <section
+      id='team'
+      className={`py-24 text-center ${useBlue ? 'bg-blue-100 dark:bg-slate-800' : 'dark:bg-slate-600'}`}>
       <div className='container'>
         <div className='text-center'>
           {lowerLevel ? (

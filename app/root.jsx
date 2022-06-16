@@ -28,7 +28,7 @@ export default function App() {
         {/* Header Area wrapper Starts */}
         <header id='header-wrap' className='relative'>
           {/* Navbar Start */}
-          <div className='navigation fixed top-0 left-0 w-full z-30 duration-300 bg-white'>
+          <div className='navigation fixed top-0 left-0 w-full z-30 duration-300 bg-white dark:bg-slate-700 border-b-blue-600'>
             <div className='container'>
               <nav className='navbar py-2 navbar-expand-lg flex justify-between items-center relative duration-300'>
                 <Link to='/' className='navbar-brand'>
@@ -51,7 +51,7 @@ export default function App() {
                   id='navbarSupportedContent'>
                   <ul className='navbar-nav mr-auto justify-center items-center lg:flex'>
                     <li className='nav-item'>
-                      <a className='page-scroll active' href='/#heading-on-deck'>
+                      <a className='page-scroll' href='/#heading-on-deck'>
                         Home
                       </a>
                     </li>
