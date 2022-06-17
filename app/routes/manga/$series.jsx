@@ -69,10 +69,7 @@ export async function loader({ request, params: { series } }) {
 }
 
 export default function MangaSeries() {
-  const { details, chapters: rawChapters, byGenres, byAuthor } = useLoaderData()
-
-  let chapters = rawChapters.map(ch => ({ ...ch, realIndex: ch.newIndex === null ? ch.index : ch.newIndex }))
-  chapters.sort((chA, chB) => chA.realIndex - chB.realIndex)
+  const { details, chapters, byGenres, byAuthor } = useLoaderData()
 
   return (
     <>
@@ -135,29 +132,31 @@ function Header({ details, chapters }) {
                   {allUnread ? (
                     <Form
                       method='POST'
-                      className='rating rating-lg rating-half mb-6'
+                      className='mb-6'
                       onChange={e => {
                         submit(e.currentTarget, { replace: true })
                       }}>
-                      <input type='hidden' name='action' value='rate' />
-                      <input type='hidden' name='mangaId' value={details._id.toString()} />
-                      <input
-                        type='radio'
-                        name='rating-10'
-                        value={0}
-                        className='rating-hidden'
-                        defaultChecked={rating === 0}
-                      />
-                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(i => (
+                      <div className='rating rating-lg rating-half'>
+                        <input type='hidden' name='action' value='rate' />
+                        <input type='hidden' name='mangaId' value={details._id.toString()} />
                         <input
-                          key={i}
                           type='radio'
                           name='rating-10'
-                          value={i}
-                          defaultChecked={rating === i}
-                          className={`bg-green-500 mask mask-star-2 mask-half-${i % 2 === 1 ? 1 : 2}`}
+                          value={0}
+                          className='rating-hidden'
+                          defaultChecked={rating === 0}
                         />
-                      ))}
+                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(i => (
+                          <input
+                            key={i}
+                            type='radio'
+                            name='rating-10'
+                            value={i}
+                            defaultChecked={rating === i}
+                            className={`bg-green-500 mask mask-star-2 mask-half-${i % 2 === 1 ? 1 : 2}`}
+                          />
+                        ))}
+                      </div>
                     </Form>
                   ) : null}
                   <div className='flex flex-wrap items-center'>
@@ -226,7 +225,7 @@ function ChaptersView({ chapters }) {
         {showEditTools ? (
           <div className='flex flex-wrap items-center'>
             <div className='p-4'>
-              <label for='table-search' className='sr-only'>
+              <label htmlFor='table-search' className='sr-only'>
                 Search
               </label>
               <div className='relative mt-1'>
@@ -237,9 +236,9 @@ function ChaptersView({ chapters }) {
                     viewBox='0 0 20 20'
                     xmlns='http://www.w3.org/2000/svg'>
                     <path
-                      fill-rule='evenodd'
+                      fillRule='evenodd'
                       d='M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z'
-                      clip-rule='evenodd'></path>
+                      clipRule='evenodd'></path>
                   </svg>
                 </div>
                 <input
@@ -281,7 +280,7 @@ function ChaptersView({ chapters }) {
                           value={chapter._id.toString()}
                           className='w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600'
                         />
-                        <label for='checkbox-table-search-1' className='sr-only'>
+                        <label htmlFor='checkbox-table-search-1' className='sr-only'>
                           checkbox
                         </label>
                       </div>

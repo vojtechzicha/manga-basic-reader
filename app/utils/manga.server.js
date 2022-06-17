@@ -230,7 +230,7 @@ export async function getNewlyUpdatedSeries() {
 
 export async function getMangaDetail(mangaPath) {
   const details = await mangasCollection.findOne({ 'request.slug': mangaPath })
-  const chapters = await chaptersCollection.find({ mangaPath }).toArray()
+  const chapters = await chaptersCollection.find({ mangaPath }, { sort: { finalIndex: 1 } }).toArray()
 
   return { details, chapters }
 }
@@ -284,89 +284,87 @@ export async function markAllChapters(mangaPath, asRead, readDate = null) {
 }
 
 export async function moveChapter(mangaPath, chapterId, shouldMoveUp) {
-  const allChapters = await chaptersCollection.find({ mangaPath }).toArray(),
-    chapters = allChapters
-      .filter(ch => !ch.hidden)
-      .map(ch => ({ ...ch, realIndex: ch.newIndex === null ? ch.index : ch.newIndex })),
-    currentChapterIndex = chapters.find(ch => ch._id.toString() === chapterId).realIndex,
+  const chapters = await chaptersCollection.find({ mangaPath, hidden: false }).toArray(),
+    currentChapter = chapters.find(ch => ch._id.toString() === chapterId),
     newChapterIndex = shouldMoveUp
-      ? chapters.reduce((pr, cu) => (cu.realIndex > pr && cu.realIndex < currentChapterIndex ? cu.realIndex : pr), -1)
+      ? chapters.reduce(
+          (pr, cu) => (cu.finalIndex > pr && cu.finalIndex < currentChapter.finalIndex ? cu.finalIndex : pr),
+          -1
+        )
       : chapters.reduce(
-          (pr, cu) => (cu.realIndex < pr && cu.realIndex > currentChapterIndex ? cu.realIndex : pr),
+          (pr, cu) => (cu.finalIndex < pr && cu.finalIndex > currentChapter.finalIndex ? cu.finalIndex : pr),
           Number.MAX_SAFE_INTEGER
         ),
-    newChapterPath = chapters.find(ch => ch.realIndex === newChapterIndex).chapterPath
+    newChapter = chapters.find(ch => ch.finalIndex === newChapterIndex)
 
   if (newChapterIndex !== -1 && newChapterIndex !== Number.MAX_SAFE_INTEGER) {
-    await chaptersCollection.updateOne({ _id: ObjectId(chapterId) }, { $set: { newIndex: newChapterIndex } })
     await chaptersCollection.updateOne(
-      { mangaPath, chapterPath: newChapterPath },
-      { $set: { newIndex: currentChapterIndex } }
+      { _id: ObjectId(chapterId) },
+      { $set: { newIndex: newChapterIndex - currentChapter.index, finalindex: newChapterIndex } }
+    )
+    await chaptersCollection.updateOne(
+      { mangaPath, chapterPath: newChapter.chapterPath },
+      { $set: { newIndex: currentChapter.finalIndex - newChapter.index, finalIndex: currentChapter.finalIndex } }
     )
   }
 }
 
 export async function getNextUnreadChapter(mangaPath) {
-  console.log({ mangaPath })
   const allChapters = await chaptersCollection.find({ mangaPath }, { skipSessions: true }).toArray(),
-    chapters = allChapters.filter(ch => !ch.hidden).map(ch => ({ ...ch, realIndex: ch.newIndex ?? ch.index }))
+    chapters = allChapters.filter(ch => !ch.hidden)
 
   if (chapters.length === 0) return allChapters[0].chapterPath
 
   const lastReadChapterIndex = chapters
     .filter(ch => ch.read)
-    .reduce((pr, cu) => (cu.realIndex > pr ? cu.realIndex : pr), -1)
+    .reduce((pr, cu) => (cu.finalIndex > pr ? cu.finalIndex : pr), -1)
   const thresholdIndex = chapters.reduce(
-    (pr, cu) => (cu.realIndex < pr && cu.realIndex > lastReadChapterIndex ? cu.realIndex : pr),
+    (pr, cu) => (cu.finalIndex < pr && cu.finalIndex > lastReadChapterIndex ? cu.finalIndex : pr),
     Number.MAX_SAFE_INTEGER
   )
 
   if (thresholdIndex === Number.MAX_SAFE_INTEGER) {
-    chapters.sort((a, b) => a.realIndex - b.realIndex)
+    chapters.sort((a, b) => a.finalIndex - b.finalIndex)
     return chapters[0].chapterPath
   } else {
-    return chapters.find(ch => ch.realIndex === thresholdIndex).chapterPath
+    return chapters.find(ch => ch.finalIndex === thresholdIndex).chapterPath
   }
 }
 
 export async function getNextChapter(mangaPath, chapterPath) {
-  const allChapters = await chaptersCollection.find({ mangaPath }).toArray(),
-    chapters = allChapters.filter(ch => !ch.hidden).map(ch => ({ ...ch, realIndex: ch.newIndex ?? ch.index }))
-
+  const chapters = await chaptersCollection.find({ mangaPath, hidden: false }).toArray()
   if (chapters.length === 0) return null
 
-  const currentChapterIndex = chapters.find(ch => ch.chapterPath === chapterPath)?.realIndex
+  const currentChapterIndex = chapters.find(ch => ch.chapterPath === chapterPath)?.finalIndex
   if (currentChapterIndex === null || currentChapterIndex === undefined) return null
 
   const thresholdIndex = chapters.reduce(
-    (pr, cu) => (cu.realIndex < pr && cu.realIndex > currentChapterIndex ? cu.realIndex : pr),
+    (pr, cu) => (cu.finalIndex < pr && cu.finalIndex > currentChapterIndex ? cu.finalIndex : pr),
     Number.MAX_SAFE_INTEGER
   )
 
   if (thresholdIndex === Number.MAX_SAFE_INTEGER) {
     return null
   } else {
-    return chapters.find(ch => ch.realIndex === thresholdIndex)
+    return chapters.find(ch => ch.finalIndex === thresholdIndex)
   }
 }
 
 export async function getPreviousChapter(mangaPath, chapterPath) {
-  const allChapters = await chaptersCollection.find({ mangaPath }).toArray(),
-    chapters = allChapters.filter(ch => !ch.hidden).map(ch => ({ ...ch, realIndex: ch.newIndex ?? ch.index }))
-
+  const chapters = await chaptersCollection.find({ mangaPath, hidden: false }).toArray()
   if (chapters.length === 0) return null
 
-  const currentChapterIndex = chapters.find(ch => ch.chapterPath === chapterPath)?.realIndex
+  const currentChapterIndex = chapters.find(ch => ch.chapterPath === chapterPath)?.finalIndex
   if (currentChapterIndex === null || currentChapterIndex === undefined) return null
 
   const thresholdIndex = chapters.reduce(
-    (pr, cu) => (cu.realIndex > pr && cu.realIndex < currentChapterIndex ? cu.realIndex : pr),
+    (pr, cu) => (cu.finalIndex > pr && cu.finalIndex < currentChapterIndex ? cu.finalIndex : pr),
     -1
   )
 
   if (thresholdIndex === -1) {
     return null
   } else {
-    return chapters.find(ch => ch.realIndex === thresholdIndex)
+    return chapters.find(ch => ch.finalIndex === thresholdIndex)
   }
 }

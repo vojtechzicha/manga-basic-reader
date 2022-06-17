@@ -13,7 +13,7 @@ export function MangaTable({ id, mangas, heading }) {
         <div className='relative overflow-x-auto shadow-md sm:rounded-lg'>
           <div className='flex flex-wrap items-center'>
             <div className='p-4'>
-              <label for='table-search' className='sr-only'>
+              <label htmlFor='table-search' className='sr-only'>
                 Search
               </label>
               <div className='relative mt-1'>
@@ -24,9 +24,9 @@ export function MangaTable({ id, mangas, heading }) {
                     viewBox='0 0 20 20'
                     xmlns='http://www.w3.org/2000/svg'>
                     <path
-                      fill-rule='evenodd'
+                      fillRule='evenodd'
                       d='M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z'
-                      clip-rule='evenodd'></path>
+                      clipRule='evenodd'></path>
                   </svg>
                 </div>
                 <input
@@ -41,12 +41,12 @@ export function MangaTable({ id, mangas, heading }) {
             </div>
           </div>
           <table className='w-full text-sm text-left text-gray-500 dark:text-gray-400'>
-            <thead class='text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400'>
+            <thead className='text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400'>
               <tr>
-                <th scope='col' class='px-6 py-3'>
+                <th scope='col' className='px-6 py-3'>
                   Series name
                 </th>
-                <th scope='col' class='px-6 py-3'>
+                <th scope='col' className='px-6 py-3'>
                   Rating
                 </th>
               </tr>
@@ -76,6 +76,7 @@ export function MangaTable({ id, mangas, heading }) {
                               name='rating-10'
                               className={`bg-green-500 mask mask-star-2 mask-half-${i % 2 === 1 ? 1 : 2}`}
                               checked={(manga.rating ?? 0) === i}
+                              readOnly={true}
                             />
                           ))}
                         </div>
@@ -118,7 +119,7 @@ function MangaViewCell({ manga }) {
           </Link>
         </div>
         <div className='text-center px-5 py-3 dark:bg-slate-500'>
-          {rating > 0 ? (
+          {/* {(manga.rating ?? 0) > 0 ? (
             <div className='rating rating-sm rating-half'>
               {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(i => (
                 <input
@@ -126,11 +127,12 @@ function MangaViewCell({ manga }) {
                   type='radio'
                   name='rating-10'
                   className={`bg-green-500 mask mask-star-2 mask-half-${i % 2 === 1 ? 1 : 2}`}
-                  checked={rating === i}
+                  checked={(manga.rating ?? 0) === i}
+                  readOnly={true}
                 />
               ))}
             </div>
-          ) : null}
+          ) : null} */}
           <h3 className='team-name dark:text-gray-100'>
             <Link to={`/manga/${manga.request.slug}`}>{manga.meta.name}</Link>
           </h3>
