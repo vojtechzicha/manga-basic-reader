@@ -21,7 +21,7 @@ MONGO_DB="manga-reader-database"```
 
 ## Development
 
-From your terminal:
+From your terminal:43
 
 ```sh
 npm run dev
