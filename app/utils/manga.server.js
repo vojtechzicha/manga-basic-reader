@@ -269,7 +269,8 @@ export async function markChapter(chapterId, asRead, readDate = null) {
 }
 
 export async function showAllChapters(mangaPath) {
-  await chaptersCollection.updateMany({ mangaPath }, { $set: { hidden: false, newIndex: null } })
+  await chaptersCollection.updateMany({ mangaPath }, [{ $set: { hidden: false, newIndex: 0, finalIndex: '$index' } }])
+  // await chaptersCollection.updateMany({ mangaPath }, { $set: { hidden: false, newIndex: 0, finalIndex: '$index' } })
 }
 
 export async function rateSeries(mangaId, rating = 0) {
@@ -297,10 +298,27 @@ export async function moveChapter(mangaPath, chapterId, shouldMoveUp) {
         ),
     newChapter = chapters.find(ch => ch.finalIndex === newChapterIndex)
 
+  console.log(
+    `Current chapter ${currentChapter.name} (index: ${currentChapter.index}, newIndex: ${currentChapter.newIndex}, finalIndex: ${currentChapter.finalIndex})`
+  )
+  console.log(
+    `changes to (index: ${currentChapter.index}, newIndex: ${
+      newChapterIndex - currentChapter.index
+    }, finalIndex: ${newChapterIndex})`
+  )
+  console.log(
+    `New chapter ${newChapter.name} (index: ${newChapter.index}, newIndexnewChapter: ${newChapter.newIndex}, finalIndex: ${newChapter.finalIndex})`
+  )
+  console.log(
+    `changes to (index: ${currentChapter.index}, newIndex: ${
+      currentChapter.finalIndex - newChapter.index
+    }, finalIndex: ${currentChapter.finalIndex})`
+  )
+
   if (newChapterIndex !== -1 && newChapterIndex !== Number.MAX_SAFE_INTEGER) {
     await chaptersCollection.updateOne(
       { _id: ObjectId(chapterId) },
-      { $set: { newIndex: newChapterIndex - currentChapter.index, finalindex: newChapterIndex } }
+      { $set: { newIndex: newChapterIndex - currentChapter.index, finalIndex: newChapter.finalIndex } }
     )
     await chaptersCollection.updateOne(
       { mangaPath, chapterPath: newChapter.chapterPath },
