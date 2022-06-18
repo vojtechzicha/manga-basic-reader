@@ -1,6 +1,5 @@
-import { getThumbnailImage } from '../../utils/manga.server'
-import { authorize } from '../../onedrive.server'
-import { json } from '@remix-run/node'
+import { getThumbnailImage } from '../../../utils/manga.server'
+import { authorize } from '../../../onedrive.server'
 
 export async function loader({ request, params: { manga } }) {
   return authorize(request, async () => {

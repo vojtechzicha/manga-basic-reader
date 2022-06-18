@@ -1,8 +1,8 @@
 import { redirect } from '@remix-run/node'
 import { Link, useLoaderData, Form } from '@remix-run/react'
-import { authorize } from '../../onedrive.server'
+import { authorize } from '../../../onedrive.server'
 
-import { getImages, getMangaDetail, markChapter, getNextChapter, getPreviousChapter } from '../../utils/manga.server'
+import { getImages, getMangaDetail, markChapter, getNextChapter, getPreviousChapter } from '../../../utils/manga.server'
 
 export async function action({ request, params: { series, chapterPath } }) {
   return await authorize(request, async () => {
@@ -19,7 +19,7 @@ export async function action({ request, params: { series, chapterPath } }) {
     if (targetChapter === null) {
       return redirect(`/manga/${series}`)
     } else {
-      return redirect(`/manga/${series}/chapter/${targetChapter.chapterPath}`)
+      return redirect(`/manga/reader/${series}/${targetChapter.chapterPath}`)
     }
   })
 }

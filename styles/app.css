@@ -15,10 +15,10 @@ p {
 .container {
   @apply mx-auto px-5;
 }
-.btn {
+.btn-html {
   @apply text-white bg-blue-600 px-10 py-3 rounded-full duration-300;
 }
-.btn:hover {
+.btn-html:hover {
   @apply bg-blue-500;
 }
 .sticky {

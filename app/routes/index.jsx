@@ -32,7 +32,6 @@ function isWithin30Days(date) {
 
 export default function Index() {
   const data = useLoaderData()
-  console.log(data.onDeck.filter(series => !isWithin30Days(series.newestRead)))
 
   return (
     <>

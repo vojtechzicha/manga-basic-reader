@@ -88,7 +88,7 @@ export async function getRelatedMangasByGenre(mangaPath) {
     ret[genre] = await mangasCollection
       .find(
         { 'meta.genres': genre, 'request.slug': { $ne: mangaPath } },
-        { projection: { 'request.slug': 1, 'meta.name': 1, thumbnail: 1, rating: 1 } }
+        { projection: { 'request.slug': 1, 'meta.name': 1, rating: 1 } }
       )
       .toArray()
     shuffleArray(ret[genre])
@@ -107,7 +107,7 @@ export async function getRelatedMangasByAuthor(mangaPath) {
   let ret = await mangasCollection
     .find(
       { 'meta.author': author, 'request.slug': { $ne: mangaPath } },
-      { projection: { 'request.slug': 1, 'meta.name': 1, thumbnail: 1, rating: 1 } }
+      { projection: { 'request.slug': 1, 'meta.name': 1, rating: 1 } }
     )
     .toArray()
   shuffleArray(ret)
@@ -290,6 +290,19 @@ export async function markAllChapters(mangaPath, asRead, readDate = null) {
     { mangaPath },
     { $set: { read: asRead, readAt: asRead ? readDate ?? new Date() : null, seen: true } }
   )
+}
+
+export async function reorderChapters(chapterOrder) {
+  for (const { id, newIndex } of chapterOrder) {
+    await chaptersCollection.updateOne({ _id: ObjectId(id) }, [
+      {
+        $set: {
+          finalIndex: newIndex,
+          newIndex: { $subtract: [newIndex, '$index'] }
+        }
+      }
+    ])
+  }
 }
 
 export async function moveChapter(mangaPath, chapterId, shouldMoveUp) {
