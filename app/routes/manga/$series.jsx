@@ -10,11 +10,13 @@ import {
   moveChapter,
   markChapter,
   markAllChapters,
+  markAllChaptersAsSeen,
   rateSeries,
   getRelatedMangasByGenre,
   getRelatedMangasByAuthor
 } from '../../utils/manga.server'
 import { MangaViewTable } from '../../components/mangaView'
+import { isAfter, subDays } from 'date-fns'
 
 export async function action({ request, params: { series } }) {
   return authorize(request, async () => {
@@ -26,6 +28,9 @@ export async function action({ request, params: { series } }) {
       return redirect(`/manga/${series}`)
     } else if (action === 'show-all') {
       await showAllChapters(series)
+      return redirect(`/manga/${series}`)
+    } else if (action === 'see-all') {
+      await markAllChaptersAsSeen(series)
       return redirect(`/manga/${series}`)
     } else if (action === 'rate') {
       await rateSeries(formData.get('mangaId'), Number.parseInt(formData.get('rating-10'), 10))
@@ -214,6 +219,7 @@ function Header({ details, chapters }) {
 
 function ChaptersView({ chapters }) {
   const [showEditTools, toggleEditTools] = useState(true)
+  console.log(chapters)
 
   useEffect(() => {
     toggleEditTools(false)
@@ -312,17 +318,18 @@ function ChaptersView({ chapters }) {
                     ) : (
                       <td>&nbsp;</td>
                     ))}
-                  {chapter.read ? (
-                    <th
-                      scope='row'
-                      className='px-6 py-4 font-medium italic text-gray-500 dark:text-white whitespace-nowrap'>
-                      <Link to={`chapter/${chapter.chapterPath}`}>{chapter.name}</Link>
-                    </th>
-                  ) : (
-                    <th scope='row' className='px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-nowrap'>
-                      <Link to={`chapter/${chapter.chapterPath}`}>{chapter.name}</Link>
-                    </th>
-                  )}
+                  <th
+                    scope='row'
+                    className={`px-6 py-4 font-medium ${
+                      chapter.read ? 'italic text-gray-500 dark:text-gray-300' : 'text-gray-900 dark:text-white'
+                    }  whitespace-nowrap`}>
+                    {chapter.seen !== true ? (
+                      <>
+                        <div className='badge badge-warning gap-2'>updated</div>{' '}
+                      </>
+                    ) : null}
+                    <Link to={`chapter/${chapter.chapterPath}`}>{chapter.name}</Link>
+                  </th>
                 </tr>
               ))}
           </tbody>
@@ -361,8 +368,15 @@ function ChaptersView({ chapters }) {
           <div className='p-4'>
             <Form method='POST' style={{ display: 'inline' }}>
               <input type='hidden' name='action' value='show-all' />
-              <input type='hidden' name='mark-as' value='read' />
               <input type='submit' className='small-gray-btn' value={'Show all hidden chapters'} />
+            </Form>
+          </div>
+        ) : null}
+        {showEditTools && chapters.filter(ch => ch.seen !== true && !ch.hidden).length > 0 ? (
+          <div className='p-4'>
+            <Form method='POST' style={{ display: 'inline' }}>
+              <input type='hidden' name='action' value='see-all' />
+              <input type='submit' className='small-gray-btn' value={'Mark all as seen'} />
             </Form>
           </div>
         ) : null}
