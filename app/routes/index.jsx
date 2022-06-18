@@ -5,7 +5,8 @@ import {
   getAllMangaSeries,
   getMangaSeriesByGenre,
   getMangaSeriesOnDeck,
-  getNewlyUpdatedSeries,
+  getLastUpdatedSeries,
+  getNewUpdates,
   getReadAgainSeries
 } from '../utils/manga.server'
 import { MangaViewTable, MangaTable } from '../components/mangaView'
@@ -16,7 +17,8 @@ export async function loader({ request }) {
       all: await getAllMangaSeries(),
       byGenre: await getMangaSeriesByGenre(),
       onDeck: await getMangaSeriesOnDeck(),
-      lastUpdated: await getNewlyUpdatedSeries(),
+      lastUpdated: await getLastUpdatedSeries(),
+      newUpdates: await getNewUpdates(),
       readAgain: await getReadAgainSeries()
     }
   })
@@ -42,7 +44,14 @@ export default function Index() {
         useBlue={true}
         maxRows={2}
       />
-      <MangaViewTable id='last-updated' mangas={data.lastUpdated} heading='Last Updated Series' maxRows={1} />
+      <MangaViewTable id='last-updated' mangas={data.newUpdates} heading='New Updates' maxRows={1} />
+      <MangaViewTable
+        id='last-updated'
+        mangas={data.lastUpdated}
+        heading='Last Updated Series'
+        maxRows={1}
+        lowerLevel={data.newUpdates.length > 0}
+      />
       {Object.keys(data.byGenre).map((genre, i) => (
         <MangaViewTable
           id={`genre-${i}`}

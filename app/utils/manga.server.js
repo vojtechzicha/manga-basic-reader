@@ -192,10 +192,42 @@ export async function getMangaSeriesOnDeck() {
   }))
 }
 
-export async function getNewlyUpdatedSeries() {
+export async function getLastUpdatedSeries() {
   let date30DaysBefore = new Date()
   date30DaysBefore.setDate(date30DaysBefore.getDate() - 30)
 
+  const mangaList = await chaptersCollection
+    .aggregate([
+      { $match: { hidden: false } },
+      {
+        $group: {
+          _id: { mangaPath: '$mangaPath' },
+          newestUpdate: { $max: '$lastUpdated' }
+        }
+      },
+      { $match: { newestUpdate: { $gt: date30DaysBefore } } },
+      { $sort: { newestUpdate: -1 } }
+    ])
+    .toArray()
+  const filteredList = await mangasCollection
+    .find(
+      { 'request.slug': { $in: mangaList.map(i => i._id.mangaPath) } },
+      {
+        sort: { 'meta.name': 1 },
+        projection: { 'meta.name': 1, 'request.slug': 1, thumbnail: 1, rating: 1 }
+      }
+    )
+    .toArray()
+
+  let joinedList = filteredList.map(ma => ({
+    ...ma,
+    updatedAt: mangaList.find(m => m._id.mangaPath === ma.request.slug)?.newestUpdate
+  }))
+  joinedList.sort((a, b) => b.updatedAt - a.updatedAt)
+  return joinedList
+}
+
+export async function getNewUpdates() {
   const mangaList = await chaptersCollection
     .aggregate([
       { $match: { hidden: false, seen: { $ne: true } } },
@@ -205,7 +237,6 @@ export async function getNewlyUpdatedSeries() {
           newestUpdate: { $max: '$lastUpdated' }
         }
       },
-      { $match: { newestUpdate: { $gt: date30DaysBefore } } },
       { $sort: { newestUpdate: -1 } }
     ])
     .toArray()
