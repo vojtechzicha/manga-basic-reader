@@ -1,4 +1,4 @@
-import { useOutletContext, Link, Form, useSubmit } from '@remix-run/react'
+import { useOutletContext, Link, Form, useFetcher } from '@remix-run/react'
 import { redirect } from '@remix-run/node'
 import { useCallback, useEffect, useState, useRef } from 'react'
 import { formatDistanceToNow } from 'date-fns'
@@ -32,7 +32,7 @@ export async function action({ request, params: { series } }) {
       return redirect(`/manga/${series}/edit`)
     } else if (formData.has('action-reorder')) {
       await reorderChapters(JSON.parse(formData.get('action-reorder')))
-      return redirect(`/manga/${series}/edit`)
+      return null
     }
 
     const { chapters } = await getMangaDetail(series)
@@ -82,9 +82,6 @@ export default function MangaSeriesEdit() {
     document.querySelector('#checkAll').className = 'checkbox'
   }, [])
 
-  const submit = useSubmit(),
-    form = useRef(null)
-
   return (
     <div className='container text-left'>
       <div className=' flex justify-between'>
@@ -122,26 +119,17 @@ export default function MangaSeriesEdit() {
         </Form>
       </div>
       <DndProvider backend={HTML5Backend}>
-        <Table
-          chapters={chapters}
-          submitReorder={() => {
-            submit(form?.current, {})
-          }}
-        />
+        <Table chapters={chapters} />
       </DndProvider>
-      <Form ref={form} method='POST' className='hidden'>
-        <input type='hidden' name='action-reorder' value='' id='set-action-reorder' />
-      </Form>
     </div>
   )
 }
 
-function TableRowList({ chapters, submitReorder }) {
+function TableRowList({ chapters }) {
   const [chapterList, setChapterList] = useState(chapters.filter(ch => !ch.hidden))
+  const [enableDrag, setEnableDrag] = useState(true)
 
-  useEffect(() => {
-    setChapterList(chapters)
-  }, [chapters])
+  const fetcher = useFetcher()
 
   const moveChapter = useCallback((dragIndex, hoverIndex) => {
     setChapterList(prevList =>
@@ -154,22 +142,23 @@ function TableRowList({ chapters, submitReorder }) {
     )
   }, [])
   const handleDrop = useCallback(
-    (targetId, targetIndex) => {
-      console.log(targetId, targetIndex, chapterList)
-      const targetChapter = { ...chapterList.find(ch => ch._id.toString() === targetId), target: true },
-        currentIndex = chapterList.findIndex(c => c._id.toString() === targetId),
-        targetList = [
-          ...chapterList.slice(0, targetIndex + (currentIndex < targetIndex ? 1 : 0)),
-          targetChapter,
-          ...chapterList.slice(targetIndex + (currentIndex < targetIndex ? 1 : 0))
-        ]
-          .filter(ch => ch._id.toString() !== targetId || ch.target === true)
-          .map((ch, chi) => ({ id: ch._id.toString(), newIndex: chi }))
+    (id, index) => {
+      const reducedList = chapterList.filter(ch => ch._id.toString() !== id)
+      const newList = [
+        ...reducedList.slice(0, index),
+        chapterList.find(ch => ch._id.toString() === id),
+        ...reducedList.slice(index)
+      ]
+      setEnableDrag(false)
 
-      document.getElementById('set-action-reorder').setAttribute('value', JSON.stringify(targetList))
-      submitReorder()
+      fetcher.submit(
+        {
+          'action-reorder': JSON.stringify(newList.map((c, ci) => ({ id: c._id.toString(), newIndex: ci })))
+        },
+        { method: 'post', replace: true }
+      )
     },
-    [chapterList, submitReorder]
+    [chapterList, fetcher]
   )
 
   const renderRow = useCallback(
@@ -180,10 +169,11 @@ function TableRowList({ chapters, submitReorder }) {
         id={chapter._id.toString()}
         chapter={chapter}
         moveChapter={moveChapter}
+        enableDrag={fetcher.state === 'idle'}
         dropChapter={handleDrop}
       />
     ),
-    []
+    [enableDrag, moveChapter, handleDrop]
   )
 
   return chapterList.map((ch, chi) => renderRow(ch, chi))
@@ -259,7 +249,7 @@ function Table({ chapters, submitReorder }) {
   )
 }
 
-function TableRow({ chapter: ch, index, moveChapter, id, dropChapter }) {
+function TableRow({ chapter: ch, index, moveChapter, id, dropChapter, enableDrag }) {
   const ref = useRef(null)
 
   const [{ handlerId }, drop] = useDrop({
@@ -289,7 +279,13 @@ function TableRow({ chapter: ch, index, moveChapter, id, dropChapter }) {
     item: () => ({ id, index }),
     collect: monitor => ({ isDragging: monitor.isDragging() }),
     end(item) {
-      dropChapter(item.id, item.index)
+      console.log(`The item ${ch.name} to position ${item.index}`)
+      setTimeout(() => {
+        dropChapter(item.id, item.index)
+      }, 100)
+    },
+    canDrag() {
+      return enableDrag
     }
   })
   const opacity = isDragging ? 0 : 1
@@ -303,10 +299,12 @@ function TableRow({ chapter: ch, index, moveChapter, id, dropChapter }) {
           <input type='checkbox' className='checkbox' name='chapters' value={ch._id.toString()} />
         </label>
       </th>
-      <td className={!ch.read ? 'font-bold' : ''}>{ch.name}</td>
+      <td className={!ch.read ? 'font-bold' : ''}>
+        {ch.name} {enableDrag ? '' : 'x'}
+      </td>
       <td className='text-xs'>{formatDistanceToNow(new Date(ch.lastUpdated), { addSuffix: true })}</td>
       <td className='text-xs'>
-        {ch.read ? formatDistanceToNow(new Date(ch.readAt), { addSuffix: true }) : <>unread</>}
+        {ch.read ? `read ${formatDistanceToNow(new Date(ch.readAt), { addSuffix: true })}` : <>unread</>}
       </td>
       <th>
         <button className='btn btn-ghost btn-xs' type='submit' name={`action-hide/${ch._id.toString()}`}>

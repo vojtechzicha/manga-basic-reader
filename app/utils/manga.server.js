@@ -20,7 +20,7 @@ export async function getAllMangaSeries() {
       {},
       {
         sort: { 'meta.name': 1 },
-        projection: { 'meta.name': 1, 'request.slug': 1, thumbnail: 1, rating: 1 }
+        projection: { 'meta.name': 1, 'request.slug': 1, rating: 1 }
       }
     )
     .toArray()
@@ -142,7 +142,7 @@ export async function getReadAgainSeries() {
       { 'request.slug': { $in: filteredList.map(i => i.mangaPath) } },
       {
         sort: { 'meta.name': 1 },
-        projection: { 'meta.name': 1, 'request.slug': 1, thumbnail: 1, rating: 1 }
+        projection: { 'meta.name': 1, 'request.slug': 1, rating: 1 }
       }
     )
     .toArray()
@@ -181,7 +181,7 @@ export async function getMangaSeriesOnDeck() {
       { 'request.slug': { $in: filteredList.map(i => i.mangaPath) } },
       {
         sort: { 'meta.name': 1 },
-        projection: { 'meta.name': 1, 'request.slug': 1, thumbnail: 1, rating: 1 }
+        projection: { 'meta.name': 1, 'request.slug': 1, rating: 1, thumbnail: 1 }
       }
     )
     .toArray()
@@ -214,7 +214,7 @@ export async function getLastUpdatedSeries() {
       { 'request.slug': { $in: mangaList.map(i => i._id.mangaPath) } },
       {
         sort: { 'meta.name': 1 },
-        projection: { 'meta.name': 1, 'request.slug': 1, thumbnail: 1, rating: 1 }
+        projection: { 'meta.name': 1, 'request.slug': 1, rating: 1 }
       }
     )
     .toArray()
@@ -245,7 +245,7 @@ export async function getNewUpdates() {
       { 'request.slug': { $in: mangaList.map(i => i._id.mangaPath) } },
       {
         sort: { 'meta.name': 1 },
-        projection: { 'meta.name': 1, 'request.slug': 1, thumbnail: 1, rating: 1 }
+        projection: { 'meta.name': 1, 'request.slug': 1, rating: 1 }
       }
     )
     .toArray()
