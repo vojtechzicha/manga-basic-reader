@@ -44,7 +44,7 @@ export default function Index() {
         useBlue={true}
         maxRows={2}
       />
-      <MangaViewTable id='last-updated' mangas={data.newUpdates} heading='New Updates' maxRows={1} />
+      <MangaViewTable id='new-updates' mangas={data.newUpdates} heading='New Updates' maxRows={1} />
       <MangaViewTable
         id='last-updated'
         mangas={data.lastUpdated}
