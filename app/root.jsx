@@ -94,7 +94,7 @@ export default function App() {
                   </p>
                 </div>
               </div>
-              <div className='w-full sm:w-1/2 md:w-1/2 lg:w-1/4 wow fadeInUp' data-wow-delay='0.4s'>
+              {/* <div className='w-full sm:w-1/2 md:w-1/2 lg:w-1/4 wow fadeInUp' data-wow-delay='0.4s'>
                 <div className='mx-3 mb-8'>
                   <h3 className='font-bold text-xl text-white mb-5'>Company</h3>
                   <ul>
@@ -164,7 +164,7 @@ export default function App() {
                     </li>
                   </ul>
                 </div>
-              </div>
+              </div> */}
             </div>
           </div>
         </footer>
@@ -190,18 +190,6 @@ export default function App() {
             </div>
           </div>
         </section>
-        {/* Go to Top Link */}
-        <a
-          href='#'
-          className='back-to-top w-10 h-10 fixed bottom-0 right-0 mb-5 mr-5 flex items-center justify-center rounded-full bg-blue-600 text-white text-lg z-20 duration-300 hover:bg-blue-400'>
-          <i className='lni lni-arrow-up' />
-        </a>
-        {/* Preloader */}
-        {/*     <div id="preloader">
-      <div class="loader" id="loader-1"></div>
-    </div> */}
-        {/* End Preloader */}
-        {/* <Outlet /> */}
         <ScrollRestoration />
         <Scripts />
         <LiveReload />

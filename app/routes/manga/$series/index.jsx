@@ -41,7 +41,7 @@ export default function MangaSeriesIndex() {
                   onClick={e => {
                     e.currentTarget.querySelector('a').click()
                   }}>
-                  <td className={!ch.read ? 'font-bold' : 'bg-gray-100'}>
+                  <td className={!ch.read ? 'font-bold' : 'bg-gray-100 dark:bg-gray-600'}>
                     {ch.seen !== true ? (
                       <>
                         <div className='badge badge-warning gap-2'>updated</div>{' '}
@@ -49,7 +49,7 @@ export default function MangaSeriesIndex() {
                     ) : null}
                     <Link to={`/manga/reader/${ch.mangaPath}/${ch.chapterPath}`}>{ch.name}</Link>
                   </td>
-                  <td className={`${ch.read ? 'bg-gray-100' : ''} text-sm`}>
+                  <td className={`${ch.read ? 'bg-gray-100 dark:bg-gray-600' : ''} text-sm`}>
                     {formatDistanceToNow(new Date(ch.lastUpdated), { addSuffix: true })}
                   </td>
                 </tr>
