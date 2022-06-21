@@ -142,7 +142,7 @@ function Header({ details, chapters }) {
                     <p className='pl-3 dark:text-gray-100'>
                       <strong>Source: </strong>
                       <a href={details.request.url} target='_blank' rel='noreferrer'>
-                        see on mangago.me ⧉
+                        see on {new URL(details.request.url).hostname.replace('www.', '')} ⧉
                       </a>
                     </p>
                   </div>

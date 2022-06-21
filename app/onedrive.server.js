@@ -1,7 +1,6 @@
 import { redirect } from '@remix-run/node'
 import { v4 as uuid } from 'uuid'
 import { getSession, commitSession } from './sessions.server'
-import { writeFile } from 'fs/promises'
 
 const {
   ONEDRIVE_CLIENT_ID,

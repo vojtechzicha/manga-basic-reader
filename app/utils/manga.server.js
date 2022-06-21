@@ -1,7 +1,11 @@
 import { chaptersCollection, mangasCollection } from '../db.server'
 import { ObjectId } from 'mongodb'
 import { max } from 'date-fns'
-const rootPath = 'https://graph.microsoft.com/v1.0/me/drive/root:/DMS/MangaGoArchive'
+
+const { ONEDRIVE_ROOT_PATH } = process.env
+
+if (!ONEDRIVE_ROOT_PATH) throw new Error('Missing OneDrive client ID in environment variables.')
+const rootPath = ONEDRIVE_ROOT_PATH
 
 async function fetchOnedrive(path, token) {
   const response = await fetch(`${rootPath}/${path}`, {
