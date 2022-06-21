@@ -1,5 +1,6 @@
 import { chaptersCollection, mangasCollection } from '../db.server'
 import { ObjectId } from 'mongodb'
+import { isAfter, compareAsc } from 'date-fns'
 const rootPath = 'https://graph.microsoft.com/v1.0/me/drive/root:/DMS/MangaGoArchive'
 
 async function fetchOnedrive(path, token) {
@@ -158,7 +159,8 @@ export async function getMangaSeriesOnDeck() {
         $group: {
           _id: { mangaPath: '$mangaPath', read: '$read' },
           count: { $count: {} },
-          newestRead: { $max: '$readAt' }
+          newestRead: { $max: '$readAt' },
+          newestUpdate: { $max: '$lastUpdated' }
         }
       }
     ])
@@ -168,9 +170,15 @@ export async function getMangaSeriesOnDeck() {
       if (group._id.read) return null
       const readPart = mangaList.find(gr => gr._id.mangaPath === group._id.mangaPath && gr._id.read)
       if (readPart === undefined) return null
+
+      if (['the-third-ending', 'bl-motel'].includes(group._id.mangaPath)) {
+        console.log(group)
+      }
       return {
         mangaPath: group._id.mangaPath,
-        date: readPart.newestRead
+        date: isAfter(new Date(readPart.newestRead), new Date(group.newsetUpdate))
+          ? readPart.newestRead
+          : group.newestUpdate
       }
     })
     .filter(group => group !== null)
