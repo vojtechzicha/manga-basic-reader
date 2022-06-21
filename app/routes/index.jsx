@@ -11,16 +11,21 @@ import {
 } from '../utils/manga.server'
 import { MangaViewTable, MangaTable } from '../components/mangaView'
 
+function waitForObject(obj) {
+  const promiseList = Object.entries(obj).map(([name, promise]) => promise.then(result => [name, result]))
+  return Promise.all(promiseList).then(Object.fromEntries)
+}
+
 export async function loader({ request }) {
-  return authorize(request, async () => {
-    return {
-      all: await getAllMangaSeries(),
-      byGenre: await getMangaSeriesByGenre(),
-      onDeck: await getMangaSeriesOnDeck(),
-      lastUpdated: await getLastUpdatedSeries(),
-      newUpdates: await getNewUpdates(),
-      readAgain: await getReadAgainSeries()
-    }
+  return authorize(request, () => {
+    return waitForObject({
+      all: getAllMangaSeries(),
+      byGenre: getMangaSeriesByGenre(),
+      onDeck: getMangaSeriesOnDeck(),
+      lastUpdated: getLastUpdatedSeries(),
+      newUpdates: getNewUpdates(),
+      readAgain: getReadAgainSeries()
+    })
   })
 }
 
