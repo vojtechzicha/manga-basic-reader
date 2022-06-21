@@ -8,7 +8,11 @@ export function headers() {
 }
 
 export async function loader({ request, params: { manga, chapter, image } }) {
-  return authorize(request, async ({ token }) => {
-    return new Response(await getImage(token, manga, chapter, image))
-  })
+  return authorize(
+    request,
+    async ({ token }) => {
+      return new Response(await getImage(token, manga, chapter, image))
+    },
+    true
+  )
 }

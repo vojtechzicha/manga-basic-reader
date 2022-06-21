@@ -32,16 +32,22 @@ export async function action({ request, params: { series, chapterPath } }) {
 }
 
 export async function loader({ request, params: { series, chapterPath } }) {
-  return await authorize(request, async ({ token }) => {
-    await markChapterAsSeen(series, chapterPath)
+  return await authorize(
+    request,
+    async ({ token }) => {
+      await markChapterAsSeen(series, chapterPath)
 
-    const { details, chapters } = await getMangaDetail(series)
-    return {
-      images: (await getImages(token, series, chapterPath)).map(img => `/manga/image/${series}/${chapterPath}/${img}`),
-      details,
-      chapter: chapters.filter(ch => ch.chapterPath === chapterPath)[0]
-    }
-  })
+      const { details, chapters } = await getMangaDetail(series)
+      return {
+        images: (await getImages(token, series, chapterPath)).map(
+          img => `/manga/image/${series}/${chapterPath}/${img}`
+        ),
+        details,
+        chapter: chapters.filter(ch => ch.chapterPath === chapterPath)[0]
+      }
+    },
+    true
+  )
 }
 
 export default function Index() {
