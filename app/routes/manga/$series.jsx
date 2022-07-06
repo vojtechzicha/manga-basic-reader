@@ -65,6 +65,7 @@ function Header({ details, chapters }) {
   const rating = details.rating ?? 0
   const allUnread = chapters.filter(ch => !ch.hidden && !ch.read).length === 0
   const submit = useSubmit()
+  console.log(details.meta.source)
 
   return (
     <div id='feature' className='bg-blue-100 dark:bg-slate-800 pt-24 pb-5'>
@@ -146,11 +147,21 @@ function Header({ details, chapters }) {
                       </a>
                     </p>
                   </div>
-                  {details.meta.additionalData?.application ? (
+                  {details.meta?.additionalData?.application ? (
                     <div className='flex flex-wrap items-center'>
                       <p className='pl-3 dark:text-gray-100'>
-                        <strong>Alternative source: </strong>
+                        <strong>Source: </strong>
                         read on {details.meta.additionalData.application} mobile app
+                      </p>
+                    </div>
+                  ) : null}
+                  {details.meta?.additionalData?.source !== undefined ? (
+                    <div className='flex flex-wrap items-center'>
+                      <p className='pl-3 dark:text-gray-100'>
+                        <strong>Source: </strong>
+                        <a href={details.meta.additionalData.source.url} target='_blank' rel='noreferrer'>
+                          read on {details.meta.additionalData.source.name} ⧉
+                        </a>
                       </p>
                     </div>
                   ) : null}
