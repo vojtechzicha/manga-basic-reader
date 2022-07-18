@@ -30,3 +30,4 @@ if (process.env.NODE_ENV === 'production') {
 
 export const chaptersCollection = db.db(MONGO_DB).collection('chapters')
 export const mangasCollection = db.db(MONGO_DB).collection('mangas')
+export const session = db.startSession()

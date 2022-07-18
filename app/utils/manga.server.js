@@ -1,4 +1,4 @@
-import { chaptersCollection, mangasCollection } from '../db.server'
+import { chaptersCollection, mangasCollection, session } from '../db.server'
 import { ObjectId } from 'mongodb'
 import { max } from 'date-fns'
 
@@ -25,7 +25,8 @@ export async function getAllMangaSeries() {
       {},
       {
         sort: { 'meta.name': 1 },
-        projection: { 'meta.name': 1, 'request.slug': 1, rating: 1 }
+        projection: { 'meta.name': 1, 'request.slug': 1, rating: 1 },
+        session
       }
     )
     .toArray()
