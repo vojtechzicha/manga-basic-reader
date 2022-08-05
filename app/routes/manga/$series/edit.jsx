@@ -1,4 +1,4 @@
-import { useOutletContext, Link, Form, useFetcher } from '@remix-run/react'
+import { Link, Form, useFetcher, useLoaderData } from '@remix-run/react'
 import { redirect } from '@remix-run/node'
 import { useCallback, useEffect, useState, useRef } from 'react'
 import { formatDistanceToNow } from 'date-fns'
@@ -71,12 +71,12 @@ export async function loader({ request, params: { series } }) {
   return authorize(request, async () => {
     await markAllChaptersAsSeen(series)
 
-    return null
+    return { chapters: (await getMangaDetail(series)).chapters }
   })
 }
 
 export default function MangaSeriesEdit() {
-  const chapters = useOutletContext().filter(ch => !ch.hidden)
+  const chapters = useLoaderData().chapters.filter(ch => !ch.hidden)
 
   useEffect(() => {
     document.querySelector('#checkAll').className = 'checkbox'
@@ -106,7 +106,7 @@ export default function MangaSeriesEdit() {
             </Link>
           </h4>
         </div>
-        <Form method='POST' className='btn-group mb-6'>
+        <Form method='POST' className='btn-group mb-6' reloadDocument>
           <button className='btn btn-ghost' type='submit' name='action-mark-all-unread'>
             Mark all as unread
           </button>
@@ -127,7 +127,6 @@ export default function MangaSeriesEdit() {
 
 function TableRowList({ chapters }) {
   const [chapterList, setChapterList] = useState(chapters.filter(ch => !ch.hidden))
-  const [enableDrag, setEnableDrag] = useState(true)
 
   const fetcher = useFetcher()
 
@@ -149,7 +148,6 @@ function TableRowList({ chapters }) {
         chapterList.find(ch => ch._id.toString() === id),
         ...reducedList.slice(index)
       ]
-      setEnableDrag(false)
 
       fetcher.submit(
         {
@@ -173,7 +171,7 @@ function TableRowList({ chapters }) {
         dropChapter={handleDrop}
       />
     ),
-    [enableDrag, moveChapter, handleDrop]
+    [moveChapter, fetcher.state, handleDrop]
   )
 
   return chapterList.map((ch, chi) => renderRow(ch, chi))
@@ -184,6 +182,7 @@ function Table({ chapters, submitReorder }) {
     <Form
       method='POST'
       className='overflow-x-auto w-full'
+      reloadDocument
       onSubmit={e => {
         setTimeout(() => {
           document.querySelectorAll('input').forEach(input => {
